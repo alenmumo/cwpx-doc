@@ -1,0 +1,195 @@
+<div id="iframe-content">
+
+<p>
+Los parámetros que vienen en la URL son conocidos como parámetros 'Query String' o parámtros 'GET': 
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char* (*get)(const char *key);</code></pre>
+</div>
+
+<p>
+El programdor especifica la llave y la función le devuelve el valor si fue encontrado, 
+o de otro modo le devolverá NULL.
+Por ejemplo, si el programdor necesita saber el valor de un parámetro llamado "g_param", 
+el código luce así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char *g_param = request.get("g_param");
+response.write("The URL parameter 'g_param' is: %s&ltbr&gt", g_param);</code></pre>
+</div>
+
+<p>
+Los argumentos vienen especificados después del símbolo '?' en la URL, 
+vienen separados por el símbolo '&' e identificados mediantes pares 'key=value'.
+El siguiente ejemplo muestra valores obtenidos de la URL:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	
+	const char *g_param1 = request.get("g_param1");
+	const char *g_param2 = request.get("g_param2");
+	
+	response.write("The URL parameter 'g_param1' is: %s&ltbr&gt", g_param1);
+	response.write("The URL parameter 'g_param2' is: %s&ltbr&gt", g_param2);	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc request_get.c -I"directorio de cwpx.h" -o request_get.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Si la compilación fue exitosa, lance un navegador web y pruebe adjuntarle "...request_get.cwpx<strong>?</strong>g_param1=a<strong>&</strong>g_param2=b":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="getcwpx(simple).png" class="description_img" alt="Simple GET"><br>
+			<small><strong><i>Simple GET</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+<p>
+También se pueden obtener parámestros cuya llave viene repetida, por ejemplo, 
+'?<strong>g_param</strong>=a&<strong>g_param</strong>=b&<strong>g_param</strong>=c'. 
+En estos casos puede utilizar la función 'request.get_at' con un índice:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char* (*get_at)(const char *key, int index);</code></pre>
+</div>
+
+<p>
+El índice comienza desde 0, como si fuera un arreglo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	
+	const char *g_param_0 = request.get_at("g_param", 0);
+	const char *g_param_1 = request.get_at("g_param", 1);
+	const char *g_param_2 = request.get_at("g_param", 2);
+	
+	response.write("The URL parameter 'g_param[0]' is: %s&ltbr&gt", g_param_0);
+	response.write("The URL parameter 'g_param[1]' is: %s&ltbr&gt", g_param_1);
+	response.write("The URL parameter 'g_param[2]' is: %s&ltbr&gt", g_param_2);
+	return;
+}</code></pre>
+</div>
+
+<p>
+En el navegador web, pruebe "...request_get.cwpx<strong>?</strong>g_param=a<strong>&</strong>g_param=b<strong>&</strong>g_param=c":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="getcwpx(repeated).png" class="description_img" alt="GET with repeated parameters"><br>
+			<small><strong><i>GET with repeated parameters</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+<p>
+Algunas veces no necesariamente se necesita el valor de un parámetro,
+sino que solamente se necesita saber si el parámetro está presente o no en la URL.
+Para esos casos, se pueden usar las funciones 'isset_get', que devuelven 1 si la llave del parámetro está presente:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">int (*isset_get)(const char *key);
+int (*isset_get_at)(const char *key, int index);</code></pre>
+</div>
+
+<p>
+Por ejemplo:
+</p>
+
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltstdlib.h&gt // for using NULL
+#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	
+	const char *g_param1 = request.get("g_param1");
+	const char *g_param2 = request.get("g_param2");
+	response.write("The URL parameter 'g_param1' is: %s&ltbr&gt", g_param1);
+	response.write("The URL parameter 'g_param2' is: %s&ltbr&gt", g_param2);
+	
+	const char *g_array_0 = request.get_at("g_array", 0);
+	const char *g_array_1 = request.get_at("g_array", 1);
+	const char *g_array_2 = request.get_at("g_array", 2);
+	response.write("The URL parameter 'g_array[0]' is: %s&ltbr&gt", g_array_0);
+	response.write("The URL parameter 'g_array[1]' is: %s&ltbr&gt", g_array_1);
+	response.write("The URL parameter 'g_array[2]' is: %s&ltbr&gt", g_array_2);
+	
+	const char *g_array = request.get("g_array");
+	response.write("The URL parameter 'g_array' is: %s&ltbr&gt", g_array);
+	
+	const char *g_null = request.get("g_null");
+	response.write("The URL parameter 'g_null' is : %s&ltbr&gt", g_null);
+	
+	if(g_null == NULL){
+		response.write("The URL parameter 'g_null' is NULL ...");
+		
+		int isset_g_null = request.isset_get("g_null");
+	
+		if(isset_g_null){
+			response.write("However, it IS PRESENT in the URL ...");
+		}
+	}		
+	return;
+}</code></pre>
+</div>
+
+<p>
+En el navegador web pruebe "<strong>?</strong>g_param1=1<strong>&</strong>g_param2=2<strong>&</strong>g_array=a<strong>&</strong>g_array=b<strong>&</strong>g_array=c<strong>&</strong>g_null".
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="getcwpx(mixed).png" class="description_img" alt="GET example"><br>
+			<small><strong><i>GET example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Como nota final, CWPX entiende espacios en la URL codificados como '%20', pero no aquellos codificados como '+'.
+Eso significa, por ejemplo, que si algún parámetro viene codificado como 'key=my%20value',
+la función 'get' devolverá 'my value', 
+pero si viene codificado como 'key=my+value', la función devolverá 'my+value'.
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

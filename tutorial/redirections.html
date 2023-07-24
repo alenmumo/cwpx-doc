@@ -1,0 +1,210 @@
+<div id="iframe-content">
+
+<p>
+Las redirecciones de solicitudes significan que el recurso web solicitado involucra el procesamiento de otro recurso,
+por lo que la solicitud se redirije hacia el otro recurso.
+En este tutorial las redirecciones se clasifican en 3 grupos: redirecciones de solicitud externas, 
+redirecciones de respuesta internas y las URLs 'reescritas' (rewritten URL).
+</p>
+
+<em><h4>Redirecciones de solicitud externas</h4></em>
+
+<p>
+Estas redirecciones se nombran 'externas' porque el script CWPX solamente enviará la instrucción de redirección al cliente,
+este último es el encargado de realizar el acto de redirigirse hacia otro recurso.
+</p>
+
+<p>
+No hay una única forma de decirle al cliente que se redirija hacia otro recurso.
+Por ejemplo, una manera es enviar una encabezado de respuesta '<strong>Location</strong>' junto con un <strong>HTTP Status Code</strong> diferente,
+como "302 Found": 
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	response.header("Status", "302 Found");
+	response.header("Location", "/cwpxdoc/redirected.cwpx");
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Otra manera es enviar una respuesta únicamente con una etiqueta 'meta' y 'refresh': 
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	response.write("&lt;meta http-equiv=\"refresh\" content=\"0; url=/cwpxdoc/redirected.cwpx\"&gt;");
+	return;
+}</code></pre>
+</div>
+
+<p>
+Otra manera más es enviar una respuesta con un código JavaScript como el siguiente: 
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	response.write("&lt;script&gt;window.location.replace(\"/cwpxdoc/redirected.cwpx\");&lt;/script&gt;");
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc redirections.c -I"directorio de cwpx.h" -o redirections.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+En otro script CWPX llamado 'redirected.c' coloque el siguiente código:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+
+	response.write("Hello from redirected.cwpx!");
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc redirected.c -I"directorio de cwpx.h" -o redirected.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Para cualquiera de los tres ejemplos, el resultado de ir a "http://localhost/.../redirections.cwpx" es una redirección a ".../redirected.cwpx":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="redirectionscwpx(external).png" class="description_img" alt="External redirection"><br>
+			<small><strong><i>External redirection</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<hr>
+
+<em><h4>Redirecciones de respuesta internas</h4></em>
+
+<p>
+Estas redirecciones son llamadas 'internas' porque el script CWPX redirigirá el procesamiento de la respuesta internamente hacia otro script CWPX,
+sin que el cliente web note lo que sucede en el servidor, por lo tanto es el servidor web el encargado de estas redirecciones: 
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">int (*request.forward)(const char *scriptpath);
+int (*response.include)(const char *scriptpath);</code></pre>
+</div>
+
+<p>
+El parámetro 'scriptpath' es el nombre del script CWPX (con ruta) hacia donde se redirigirá la solicitud.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdlib.h&gt;  // NULL
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	request.forward("redirected.cwpx");
+	return;
+}</code></pre>
+</div>
+
+<p>
+Al lanzar un navegador web e ir a "http://localhost/.../redirections.cwpx" se mostrará el contenido de 'redirected.cwpx' (la URL del navegador permance igual).
+</p>
+
+<hr>
+
+<em><h4>Rewritten URLs</h4></em>
+
+<p>
+URL rewriting, o re-escritura de URLs, significa la URL actual visible en el navegador o cliente web,
+no necesariamente apunta a un recurso almacenado en la ruta a la que apunta la URL, sino a otra URL u otro recurso. 
+In CWPX, 'Rewritten URLs' mean that the current request URL doesn't necessary directs to that URL, but to another.
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="url_rewriting.png" class="description_img" alt="URL Rewriting in CWPX"><br>
+			<small><strong><i>URL Rewriting in CWPX</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+En el ejemplo de la imagen anterior, la parte de la URL que realmente importa es "localhost:8080/redirections", 
+pero esa parece ser una URL para un directorio, no un recurso (archivo), ya que no tiene una extensión de archivo.
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="url_rewriting_2.png" class="description_img" alt="URL Rewriting in CWPX"><br>
+			<small><strong><i>URL Rewriting in CWPX</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+En la imagen anterior, la parte de la URL que realmente importa es "localhost:8080/redirections.cwpx", 
+pero no hay ningún separador '?', por lo que esa URL no estaría en realidad apuntando a 'redirections.cwpx', 
+sino a 'redirections.cwpx/p_1/p_2/p_3'. Aún si hubiera un separador '?' como en 'redirections.cwpx?p_1/p_2/p_3', 
+eso no asegura que el recurso 'redirections.cwpx' existe.
+</p>
+
+<p>
+Esta implementación de CWPX, al ser CGI, no tiene un mecanismo propio para implementar URL Rewriting,
+ya que eso es una tarea que debe ser ejecutada por el servidor web quien es el que recibe las solcitudes e interpreta las URLs.
+No obstante, al ser CGI, quiere decir que hay una amplia oferta de servidores web con soporte para CWPX, 
+y es posible que varios de los servidores web implementen algún tipo de URL Rewriting.
+Por ejemplo, en este tutorial se utiliza el servidor Apache, el cual, a través de archivos .htaccess,
+permite escribir reglas para redirigir las solcitudes entrantes hacia recursos específicos,
+permitiendo a lenguages de programación como PHP la implementación de marcos de desarrollo MVC o servicios REST:
+</p>
+
+<p>
+Más adelante en el tutorial, con la aplicación de la CWPX API, se verá este tipo de funcionamiento en detalle.
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

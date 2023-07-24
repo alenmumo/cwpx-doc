@@ -1,0 +1,240 @@
+
+<div id="iframe-content">
+
+<p>
+Como se explica en el tutorial de CWPX, hay dos opciones para cargar un archivo.
+Uno es enviar el archivo como parte de un cuerpo "<strong>multipart/form-data</strong>".
+El otro es enviar el archivo como el <strong>cuerpo completo</strong> de la solicitud.
+En la sección <strong>Request Parameters</strong>,
+se mencionaron las "<strong><em>anotaciones</em></strong>" <strong>"@files"</strong> y <strong>"@raw"</strong>.
+Ambos tienen que ser utilizados de una manera especial:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@files", FormFile *, urfile)
+_post
+_maproute("&lt;url for uploading form file&gt;", &lt;handling function&gt;);</code></pre>
+</div>
+<br>
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@raw", char *, urfilebytes)
+_post
+_maproute("&lt;url for uploading raw file&gt;", &lt;handling function&gt;);</code></pre>
+</div>
+
+<p>
+En el caso de multipart/form-data, el tipo <strong>FormFile *</strong> contiene toda la información necesaria para manejar el archivo,
+mientras que en el caso de todo el cuerpo, los bytes sin procesar del cuerpo de la solicitud están señalados por una variable de tipo <strong>char *</strong> especificada.
+</p>
+
+<hr>
+
+<em><h4>FormFile</h4></em>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>uploadfiles</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>uploadfiles.c</strong>, este será el controlador principal de la aplicación.
+El archivo uploadfiles.c actual debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void uploadMultipart(formfile *urfile){
+	
+	if(urfile != NULL){
+		_content("urfile.filename=.%s.&lt;br&gt;", urfile-&gt;filename);
+		_content("urfile.content_type=.%s.&lt;br&gt;", urfile-&gt;content_type);
+		_content("urfile.length=.%d.&lt;br&gt;", urfile-&gt;length);
+		
+		if(urfile-&gt;temp_filename && urfile-&gt;name){
+			if(rename(urfile-&gt;temp_filename, urfile-&gt;filename) == 0){
+				_content("Your file has been successfully uploaded!");
+			}
+			else{
+				_content("The was an error moving the file!");
+			}
+		}
+		return;
+	}
+	_content("The file came NULL!");
+}
+
+void testpage(){
+	char *form_tag = "&lt;form action=\"/uploadfiles/uploadform\" enctype=\"multipart/form-data\" method=\"POST\"&gt;\n"
+	"urfile (form): &lt;input type='file' name='urfile' /&gt;\n"
+	"&lt;input type='submit' value='Upload formfile' /&gt;\n"
+	"&lt;/form&gt;\n\n";
+	
+	_content(form_tag);
+}
+
+void _http(){
+
+	_("@files", formfile *, urfile)
+	_maproute("/uploadform", uploadMultipart);
+	
+	_maproute("/*", testpage);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc uploadfiles.c -I"directorio de cwpx.h" -o uploadfiles.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Edite el archivo <strong>.htaccess</strong> para redirigir todas las solicitudes a "/uploadfiles" hacia el archivo uploadfiles.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ uploadfiles.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Vaya al navegador web y diríjase a "localhost/uploadfiles" para ver la página de prueba para cargar un archivo desde un formulario HTML:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="uploadfilesformcwpxapi.png" class="description_img" alt="\"Upload FormFile\" example"><br>
+			<small><strong><i>"Upload FormFile" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<hr>
+
+<em><h4>Raw Body</h4></em>
+
+<p>
+Cree una función C que maneje la escritura de bytes de archivos en el disco.
+Con JavaScript, cree un código para enviar bytes sin procesar del archivo de entrada HTML.
+El ejemplo envía el nombre de archivo adjunto en la URL (cadena de consulta).
+El archivo uploadfiles.c, modificado para manejar cargas de archivos sin procesar, debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;
+#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void uploadRaw(char *urfilebytes, char *filename){
+	
+	if(urfilebytes != NULL){
+		
+		int length = ( _header("Content-Length") != NULL ) ? atoi( _header("Content-Length") ) : 0;
+		if(length == 0) { _content("The file came empty!"); return; }
+		
+		char *extension = ( _header("Content-Type") != NULL ) ? strrchr( _header("Content-Type"), '/') : "";
+		extension = extension != NULL ? extension : "";
+		
+		FILE *uploadedFile = fopen(filename, "wb");
+		if(uploadedFile == NULL) { _content("The was an error creating the file!"); return; }
+		
+		int written = 0;
+		int totalWritten = 0;
+		while((written = fwrite(urfilebytes + totalWritten, 1, length, uploadedFile)) &gt; 0){
+			totalWritten += written;
+			if(totalWritten == length) break;
+		}
+		
+		fclose(uploadedFile);
+		
+		_content("urfile.name=.%s.&lt;br&gt;", filename);
+		_content("urfile.content_type=.%s.&lt;br&gt;", _header("Content-Type"));
+		_content("urfile.length=.%d.&lt;br&gt;", length);
+		
+		_content("Your file has been successfully uploaded!");
+		
+		return;
+	}
+	_content("The file came NULL!");
+}
+
+void testpage(){
+	char *rawFunction = "&lt;script&gt;function sendRaw(){\n"
+	"var urfile = document.getElementById('urfile').files[0];\n"
+	"var reader = new FileReader();\n"
+	"reader.onload = function(){\n"
+	"	var arrayBuffer = this.result;\n"
+	"	var ajax = new XMLHttpRequest();\n"
+	"	ajax.onreadystatechange = function(){ if(this.readyState == 4 && this.status == 200) alert(this.responseText); };\n"
+	"	ajax.open('POST', '/uploadfiles/uploadraw?filename=' + urfile.name);\n"
+	"	ajax.send(arrayBuffer);\n"
+	"}\n"
+	"reader.readAsArrayBuffer(urfile);\n"
+	"}&lt;/script&gt;\n\n";
+	
+	char *raw_tag = "urfile (raw): &lt;input type='file' id='urfile' /&gt;\n"
+	"&lt;input type='button' value='Upload rawfile' onclick='sendRaw()'/&gt;\n\n";
+	
+	_content(rawFunction);
+	_content(raw_tag);
+}
+
+void _http(){
+
+	_("@raw", char *, urfilebytes)
+	_("@query", char *, filename)
+	_maproute("/uploadraw", uploadRaw);
+	
+	_maproute("/*", testpage);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc uploadfiles.c -I"directorio de cwpx.h" -o uploadfiles.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Vaya al navegador web y diríjase a "localhost/uploadfiles" para ver la página de prueba para cargar un archivo desde HTML/JavaScript:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="uploadfilesrawcwpxapi.png" class="description_img" alt="\"Upload RawFile\" example"><br>
+			<small><strong><i>"Upload RawFile" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

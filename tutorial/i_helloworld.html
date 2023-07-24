@@ -1,0 +1,127 @@
+
+<div id="iframe-content">
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>helloapi</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>helloapi.c</strong>, este será el controlador principal de la aplicación.
+Incluya la API iCWPX al principio del archivo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;</code></pre>
+</div>
+
+<p>
+Cambie el método principal <strong>do_http</strong> que recibe los parámetros Request y Response, 
+por un método llamado <strong>_http</strong> sin parámetros:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">void _http(){
+}</code></pre>
+</div>
+
+<p>
+Declare una función para imprimir un mensaje utilizando la función de la API llamada <strong>_content</strong>. 
+Use esa función de la misma manera que 'printf'.
+En el cuerpo de la función _http, use la función de la API llamada <strong>_maproute</strong>.
+El primer parámetro de esta función es el patrón de URL que ejecutará la función especificada en el segundo parámetro.
+Si ninguno de los patrones de URL especificados por ninguna llamada a _maproute coincide, se muestra un mensaje predeterminado.
+El archivo helloapi.c actual debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void sayHelloWorld(){
+	_content("&lt;h1&gt;Hello World!&lt;/h1&gt;");
+}
+
+void _http(){
+
+	_maproute("/hello", sayHelloWorld);
+	
+	_content("Resource not found");
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compile el código fuente como se describe en el tutorial, pero esta vez agregando la biblioteca de la API iCWPX. .
+</p>
+
+<div class='command'>
+<pre>
+$ gcc helloapi.c -I"directorio de cwpx.h" -o helloapi.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Si la compilación fue exitosa, ahora tiene el archivo helloapi.cwpx, el cual será colocado en alguna parte del directorio web del servidor.
+</p>
+
+<p>
+La API de iCWPX necesita <strong>reescritura</strong> para funcionar, por lo tanto,
+el servidor web utilizado debe soportar un mecanismo para poder redirigir solicitudes con cierto patrón en la URL hacia un archivo CWPX escpecífico,
+como lo es el controlador recién creado en el código anterior.
+</p>
+
+<p>
+El servidor web utilizado en este tutorial es el Apache, ya que mediante archivos '<strong>.htacces</strong>' y algunas configuraciones,
+se puede lograr la rescritura de URLs. 
+Además, la API de iCWPX depende de variables de entorno específicas de CGI, 
+tales como '<strong>REQUEST_URI</strong>', '<strong>DOCUMENT_ROOT</strong>' y '<strong>SCRIPT_FILENAME</strong>',
+las cuales están disponibles en Apache. 
+A continuación se muestra un ejemplo de archivo '.htaccess' que debe ser colocado en la misma ruta donde se colocó el archivo helloapi.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Tell CWPX that the mod_rewrite module is ENABLED.
+	SetEnv HTTP_MOD_REWRITE On
+	
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+    Options +FollowSymLinks
+	
+	RewriteEngine On
+ 
+	RewriteCond %{SCRIPT_FILENAME} !-f
+    
+	RewriteRule ^.*$ ./helloapi.cwpx
+	
+ 
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Lance un navegador web browser y vaya a "localhost<strong>/rutadehelloapi/hello</strong>". 
+Si todo se hizo correctamente, debería ver un "¡Hola mundo!":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="helloworldcwpxapi.png" class="description_img" alt="\"Hello World\" example"><br>
+			<small><strong><i>"Hello World" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

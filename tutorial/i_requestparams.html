@@ -1,0 +1,166 @@
+
+<div id="iframe-content">
+
+<p>
+Los parámetros de solicitud vienen de varias maneras: 
+rutas de URL, encabezados, "cadena de consulta" (parámetros codificados de URL enviados después de un símbolo?),
+cookies (un encabezado especial), textos o archivos dentro del cuerpo de la solicitud, o incluso todo el cuerpo de la solicitud.
+</p>
+
+<p>
+Previamente se vio cómo obtener parámetros que vienen en las rutas de las URL.
+Para obtener el resto de parámetros (encabezados, consulta, cuerpo),
+use las funciones de "<strong><em>anotación</em></strong>" de la API iCWPX <strong>"@header"</strong>,
+<strong>"@query"</strong>, <strong>"@cookies"</strong>, <strong>"@body"</strong>,
+<strong>"@files"</strong> y <strong>"@raw"</strong>:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@header", &lt;param_type&gt;, &lt;param_name&gt;)</code></pre>
+</div>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@query", &lt;param_type&gt;, &lt;param_name&gt;)</code></pre>
+</div>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@cookies", &lt;param_type&gt;, &lt;param_name&gt;)</code></pre>
+</div>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@body", &lt;param_type&gt;, &lt;param_name&gt;)</code></pre>
+</div>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@files", &lt;param_type&gt;, &lt;param_name&gt;)</code></pre>
+</div>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@raw", &lt;param_type&gt;, &lt;param_name&gt;)</code></pre>
+</div>
+
+<p>
+Estas <em>anotaciones</em> deben ubicarse justo antes de llamar a _maproute.
+</p>
+
+<p>
+Para acceder a los valores de estos parámetros,
+los usuarios tienen que agregar parámetros a las funciones que se van a ejecutar,
+con igual nombre y mismo orden se declararon en las respectivas anotaciones.
+</p>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>requestparams</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>requestparams.c</strong>, este será el controlador principal de la aplicación.
+El archivo requestparams.c actual debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void showHeader(char *User_Agent){
+	_content("&lt;h3&gt;Client's User-Agent: %s&lt;/h3&gt;", User_Agent);
+}
+
+void showQuery(int number){
+	_content("&lt;h3&gt;Query String: %d&lt;/h3&gt;", number);
+}
+
+void showPostValue(char *name){
+	_content("&lt;h3&gt;Post name: %s&lt;/h3&gt;", name);
+}
+
+void form(){
+	
+	char *form_tag = "&lt;form action=\"/requestparams/showname\" method=\"POST\"&gt;"
+	"Name: &lt;input type='text' name='name' /&gt;"
+	"&lt;input type='submit' value='Send Post' /&gt;"
+	"&lt;/form&gt;";
+	
+	_content("&lt;a href=\"/requestparams/showagent\"&gt;Show User-Agent header&lt;/a&gt;&lt;br&gt;");
+	_content("&lt;a href=\"/requestparams/shownumber?number=53\"&gt;Show number from URL query&lt;/a&gt;&lt;br&gt;");
+	_content(form_tag);
+	
+	_content("&lt;style&gt;a{ display: block; margin: 2%% 15px; color: blue; text-decoration: underline; cursor: pointer; }&lt;/style&gt;");
+}
+
+void _http(){
+
+	_("@header", char *, User_Agent)
+	_maproute("/showagent", showHeader);
+	
+	_("@query", int, number)
+	_maproute("/shownumber", showQuery);
+	
+	_("@body", char *, name)
+	_maproute("/showname", showPostValue);
+	
+	_maproute("*", form);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc requestparams.c -I"directorio de cwpx.h" -o requestparams.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Edite el archivo <strong>.htaccess</strong> para redireccionar todas las solicitudes a "/requestparams" hacia el archivo requestparams.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ requestparams.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Inicie un navegador web y vaya a "localhost/requestparams".
+Si todo está bien, debería ver una página con enlaces y un formulario para probar las funciones.
+</p>
+
+<hr>
+
+<em><h4>El caso especial "@header"</h4></em>
+
+<p>
+Cuando los usuarios quieren recuperar el valor de un encabezado de solicitud,
+tienen que saber el nombre HTTP exacto de ese encabezado específico,
+para que puedan establecer una anotación como <em>_("@header", char *, User_Agent)</em>.
+Los nombres de encabezado HTTP que contienen un guión "<strong>-</strong>",
+debe escribirse igual, pero usando un guión bajo "<strong>_</strong>" en reemplazo del guión central.
+Esto se debe a que en C, los nombres de variables solo pueden tener guiones bajos en sus nombres.
+</p>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

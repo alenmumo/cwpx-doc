@@ -1,0 +1,204 @@
+<div id="iframe-content">
+
+<p>
+Una página CWPX es una abstracción de un archivo CWPX, es decir, 
+la página CWPX se 'transpila' generando un archivo fuente C con la implementación de la biblioteca CWPX y luego, 
+este archivo C resultante se compila para generar el ejecutable final.
+Las páginas CWPX tienen una extensión '<strong>.cwp</strong>'.
+</p>
+
+<p>
+CWPX oferece una utilidad llamada '<strong>cwpxcc</strong>', la cual es un programa independiente, ejecutable, 
+que se encarga de la 'interpretación'. 
+Dicha utilidad se maneja con una sintaxis de comando muy similar a la utilizada por el compilador GCC. 
+Para poder utilizar esta herramienta <u>se necesita tener instalado GCC</u>.
+</p>
+
+<p>
+Para delimitar las partes de la página que serán 'interpretadas' como código C, 
+el usuario debe escribir el código entre etiquetas del tipo <strong>'<% %>'</strong>.
+Todo lo que se encuentre afuera de las etiquetas será directamente escrito en la respuesta HTTP.
+</p>
+
+<p>
+Hay algunas <strong>consideraciones importantes</strong> que los usuarios deben tomar en cuenta al trabajar con páginas CWPX:
+<ul class="globe_bullet">
+	<li>
+	Cualquier código que no se quiera que sea escrito en la respuesta HTTP, como por ejemplo,
+	importación de bibliotecas o declaración de métodos y variables, 
+	DEBE aperecer al inicio de la página CWPX.<br>
+	Para este tipo de código, la etiqueta de apertura es '<strong><%@ </strong>' (con un espacio después del @) y 
+	la etiqueta de cierre es '<strong> %></strong>' (con un espacio antes del %)
+	</li>
+	<li>
+	Las primeras líneas de una página CWPX deberían ser las diretivas <em>include</em> (usando '<strong><%@  %></strong>').
+	</li>
+	<li>
+	Macros, declaraciones y definiciones de variables y declaraciones de métodos 
+	también deberían estar al inicio de la página ('<strong><%@  %></strong>'). 
+	Las implementaciones de las funciones o grandes porciones de código C deberían estar en archivos aparte para mantener la pagina limpia,
+	sólo con el código web relevante.
+	</li>
+	<li>
+	El resto de secciones de código dinámico se especifican dentro de las mismas etiquetas,
+	solamente que la etiqueta de apertura no lleva el '@', por lo que serían '<strong><% </strong>' y '<strong>< %></strong>' (con los espacios).
+	El código que se encuentra dentro de estas etiquetas SÍ será escrito en la respuesta HTTP.
+	</li>
+	<li>
+	Se debe prestar especial atención y cuidado cuando el contenido de la página en sí mismo contiene las etiquetas especiales (se deben 'escapar' o aplicar algún mecanismo de conversión).
+	</li>
+	<li>
+	Todos los bloques que delimitan un ámbito de código como IF, WHILE o FOR, 
+	DEBEN llevar las llaves de apertura y cierre '{' y '}', aún y cuando solamente se trate de una única instrucción.
+	</li>
+</ul>
+<script>
+	//bullets_("ul.globe_bullet");
+</script>
+</p>
+
+<p>
+Una página CWPX básica luce así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;%@ #include &lt;cwpx.h&gt; %&gt;</code></pre>
+</div>
+
+<p>
+<!--A file including the cwpx interface is enough for having a working CWPX Page, but it has no meaning if it doesn't output anything. -->
+Para escribir algún contenido web en la respuesta HTTP, por ejemplo, algún HTML, 
+el programador puede hacerlo de dos maneras. Una es escribiendo el HTML como normalmente lo haría:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint"><!--&lt;%@ #include &lt;cwpx.h&gt; %&gt;-->
+&lt;html&gt;
+&lt;body&gt;
+	&lt;p&gt;This is a CWPX Page!&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+</div>
+
+<p>
+La otra es escribiendo el HTML a través de las funciones que ofrece la biblioteca:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint"><!--&lt;%@ #include &lt;cwpx.h&gt; %&gt;-->
+&lt;% response.write("&lt;html&gt;");
+response.write("&lt;body&gt;");
+response.write("&lt;p&gt;This is a CWPX Page!&lt;/p&gt;");
+response.write("&lt;/body&gt;");
+response.write("&lt;/html&gt;"); %&gt
+</code></pre>
+</div>
+
+<p>
+De cualquier modo, el código del primer ejemplo será convertido al código del segundo ejemplo por medio del intérprete 'cwpxcc',
+sin embargo, es claro que es menos tedioso trabajar con un formato directo como el del primero ejemplo, 
+sobre todo para apreciar mejor el diseño estructural de la página.
+</p>
+
+<p>
+El siguiente ejemplo muestra macros, declaraciones de variables y funciones, entre otros.
+Estos deben aparecer al inicio de la página:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint"><!--&lt;%@ #include &lt;cwpx.h&gt; %&gt;-->
+&lt;%@ #include &lt;stdio.h&gt;
+#include &lt;string.h&gt; %&gt;
+
+&lt;%@ 
+/* preprocessor macro */
+#define my_pow(a) (a * a)
+ %&gt;
+
+&lt;%@ /* variables and functions */
+int i;
+double square_root(int number); /* function implementation in a separate file */
+int pow_2 = my_pow(2); %&gt;
+
+&lt;html&gt;
+&lt;body&gt;
+
+&lt;% 
+i = 4;
+response.write("&lt;p&gt;This is a CWPX Page!&lt;/p&gt;");
+response.write("The power 2 of 2 = %d&lt;br&gt;", pow_2);
+response.write("The square root of %d is %f&lt;br&gt;", i, square_root(i)); %&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+</div>
+
+<p>
+Un 'Hola Mundo' dinámico:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint"><!--&lt;%@ #include &lt;cwpx.h&gt; %&gt;-->
+&lt;html&gt;
+&lt;body&gt;
+&lt;% int i;
+for(i = 1; i <= 100; i++){
+	response.write("%d. Hello World!\n", i);
+} %&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+</div>
+
+<p>
+Para compilar la página utilice la utilidad '<strong>cwpxcc</strong>' como se muestra a continuación. 
+Recuerde que se debe configurar el Sistema Operativo, 
+ya sea para que el usuario le indique al sistema el lugar donde se encuentra la biblioteca CWPX,
+o bien, para que el usuario sepa dónde debe colocar la biblioteca.
+También debe configurar bien el ambiente para que la línea de comandos reconozca el compilador.
+</p>
+
+<div class='command'>
+<pre>
+$ cwpxcc helloworld.cwp -I"directorio de cwpx.h" -o helloworld.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Si la compilación fue exitosa, el archivo 'helloworld.cwpx', es el CGI ejecutable. 
+Este archivo debe ser colocado en la carpeta 'web' del servidor web, 
+dependiendo de su configuración, como cualquier CGI.
+Al lanzar un navegador web hacia la ruta del script, se puede observar el resultado de la página CWPX:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="helloworldcwp100.png" class="description_img" alt="\"Hello World\" example"><br>
+			<small><strong><i>Dynamic "Hello World" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Si el programador lo desea, puede cambiar la extensión del archivo resultante de la compilación,
+para que en lugar de ser '.cwpx' sea '.cwp' y así de algún modo recordar que ese archivo compilado corresponde a una página y 'diferenciarlo' de un script CWPX normal. 
+Al cambiar el nombre del archivo para que sea '.cwp' se debe tener el cuidado de no reemplazar el archivo .cwp original
+con el código fuente de la página (puede copiar el archivo en otro sitio y renombrarlo donde no afecte).
+</p>
+
+
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

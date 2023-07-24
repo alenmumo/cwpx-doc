@@ -1,0 +1,126 @@
+<div id="iframe-content">
+
+<p>
+Con el mapeo de URL, una URL se puede enviar directamente a una función sin tener que escribir manualmente el código para analizar el patrón de URL.
+La función <strong>_mapURL</strong> recibe un patrón de URL para verificar y el nombre de una función para ejecutar en caso de que la URL entrante coincida con el patrón especificado.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">void _maproute(const char *url_pattern, &lt;function name&gt;);</code></pre>
+</div>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>urlmapping</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>urlmapping.c</strong>, este será el controlador principal de la aplicación.
+Declare tres funciones para imprimir diferentes mensajes.
+El archivo urlmapping.c actual debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void functionA(){
+	_content("&lt;h1&gt;I'm function A&lt;/h1&gt;");
+}
+
+void functionB(){
+	_content("&lt;h2&gt;I'm function B&lt;/h2&gt;");
+}
+
+void functionC(){
+	_content("&lt;h3&gt;I'm function C&lt;/h3&gt;");
+}
+
+void _http(){
+
+	_maproute("/a", functionA);
+	
+	_maproute("/b", functionB);
+	
+	_maproute("/c", functionC);
+	
+	_content("Resource not found");
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc urlmapping.c -I"directorio de cwpx.h" -o urlmapping.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Si la compilación fue exitosa ahora tiene el archivo 'urlmapping.cwpx'. 
+Recuerde crear un archivo .htaccess para redirigir todos los accesos al directorio hacia el archivo 'urlmapping.cwpx'.
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ urlmapping.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Lance un navegador y vaya a "localhost/urlmapping/<strong>a</strong>" o ".../urlmapping/<strong>b</strong>" o ".../<strong>c</strong>". 
+Si todo está bien, debería ver que las funciones se ejecutaron de acuerdo con la solicitud:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="urlmappingcwpxapi.png" class="description_img" alt="\"URL Mapping\" example"><br>
+			<small><strong><i>"URL Mapping" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+En caso de que un usuario necesite un patrón que coincida con cualquier URL entrante a "../urlmapping/a/<strong>lo_que_sea_el_resto</strong>",
+como en el ejemplo anterior, entonces necesita reescribir el patrón de URL y colocar un símbolo de asterisco que represente el resto de la URL, así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_maproute("/a/*", functionA);</code></pre>
+</div>
+
+<p>
+Recuerde volver a compilar para que los cambios surtan efecto.
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="urlmappingerrorfixcwpxapi.png" class="description_img" alt="\"URL Mapping asterisc\" example"><br>
+			<small><strong><i>"URL Mapping" asterisk</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

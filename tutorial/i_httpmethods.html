@@ -1,0 +1,161 @@
+
+<div id="iframe-content">
+
+<p>
+De forma predeterminada, la función _maproute solo detecta solicitudes con el método HTTP <strong>GET</strong>.
+Para permitir explícitamente los métodos HTTP GET, POST, PUT o DELETE,
+use <em>etiquetas</em> de método como "<strong>_get</strong>", "<strong>_post</strong>", "<strong>_put</strong>" y "<strong>_delete </strong>", de la siguiente manera:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_get
+_maproute("/&lt;URL for only GET requests&gt;", &lt;function&gt;);
+
+_post
+_maproute("/&lt;URL for only POST requests&gt;", &lt;function&gt;);
+
+_put
+_maproute("/&lt;URL for only PUT requests&gt;", &lt;function&gt;);
+
+_delete
+_maproute("/&lt;URL for only DELETE requests&gt;", &lt;function&gt;);
+
+_get _post
+_maproute("/&lt;URL for GET & POST requests&gt;", &lt;function&gt;);</code></pre>
+</div>
+
+<p>
+Estas <em>etiquetas</em> deben ubicarse justo antes de la llamada a _maproute.
+Cuando una función _maproute tiene una etiqueta de método, el GET predeterminado ya no está disponible.
+Eso significa que, si no hay una etiqueta de método, GET es el comportamiento predeterminado, pero si existen etiquetas de método, las solicitudes están restringidas a esos métodos.
+</p>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>httpmethods</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>httpmethods.c</strong>, este será el controlador principal de la aplicación.
+Declare algunas funciones para ilustrar el funcionamiento de los métodos HTTP y el código para mapear las URL.
+El archivo httpmethods.c actual debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void get(){
+	_content("&lt;h3&gt;GET&lt;/h3&gt;");
+}
+
+void post(){
+	_content("&lt;h3&gt;POST&lt;/h3&gt;");
+}
+
+void put(){
+	_content("&lt;h3&gt;PUT&lt;/h3&gt;");
+}
+
+void delete_(){
+	_content("&lt;h3&gt;DELETE&lt;/h3&gt;");
+}
+
+void getandpost(){
+	_content("&lt;h3&gt;GET&POST: %s&lt;/h3&gt;", _method);
+}
+
+void index(){
+	
+	char *anchor = "&lt;a onclick=\"var ajax = new XMLHttpRequest(); "
+	"ajax.onreadystatechange = function(){ if(this.readyState == 4 && this.status == 200) alert(this.responseText); }; "
+	"ajax.open('%s', '/httpmethods/%s'); ajax.send('dont send me a 413 please'); return false;\"&gt;/httpmethods/%s&lt;/a&gt;";
+	
+	_content(anchor, "GET", "getresource", "getresource");
+	_content(anchor, "POST", "postresource", "postresource");
+	_content(anchor, "PUT", "putresource", "putresource");
+	_content(anchor, "DELETE", "deleteresource", "deleteresource");
+	_content(anchor, "GET", "getorpostresource", "getorpostresource");
+	_content(anchor, "POST", "getorpostresource", "getorpostresource");
+	
+	_content("&lt;style&gt;a{ display: block; margin: 2%% 15px; color: blue; text-decoration: underline; cursor: pointer; }&lt;/style&gt;");
+}
+
+void _http(){
+
+	_get
+	_maproute("/getresource", get);
+	
+	_post
+	_maproute("/postresource", post);
+	
+	_put
+	_maproute("/putresource", put);
+	
+	_delete
+	_maproute("/deleteresource", delete_);
+	
+	_get _post
+	_maproute("/getorpostresource", getandpost);
+	
+	_maproute("/", index);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+El código tiene una función de índice para manejar solicitudes a "/".
+Esta función muestra una página con enlaces para probar las otras URL y funciones:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="httpmethodsindexcwpxapi.png" class="description_img" alt="\"HTTP Methods\" example"><br>
+			<small><strong><i>"HTTP Methods" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc httpmethods.c -I"directorio de cwpx.h" -o httpmethods.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Edite el archivo <strong>.htaccess</strong> para redirigir todas las solicitudes a "/httpmethods" hacia httpmethods.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ httpmethods.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Inicie un navegador web y vaya a "localhost/httpmethods/".
+Si todo está bien, debería ver la página de índice de la última imagen.
+Utiliza AJAX para enviar las solicitudes según el método HTTP seleccionado.
+</p>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

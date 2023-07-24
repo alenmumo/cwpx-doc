@@ -1,0 +1,200 @@
+
+<div id="iframe-content">
+
+<p>
+Las redirecciones ya están implícitas en la API de iCWPX.
+Al llamar a <strong>_maproute</strong> con algún patrón de URL y también al llamar a un script CWPX mediante la función <strong>_view</strong>.
+La idea detrás de las redirecciones CWPX es que hay un controlador que captura la solicitud primero y luego la envía a otro controlador.
+Esto puede suceder internamente, en el lado del servidor o externamente (el servidor le dice al cliente que vaya a otra URL).
+</p>
+
+<p>
+Para una redirección externa, la función _content puede ayudar.
+Solo necesita enviar las instrucciones al cliente para realizar la redirección:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void _http(){
+
+	_status(302, "Found");
+	_header("Location", "/redirected.cwpx");
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para las redirecciones internas, las cosas son un poco diferentes.
+</p>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>redirections</strong> y vaya a esa carpeta.
+Esta vez, el controlador principal no tendrá las definiciones de funciones, pero se delegarán a otro archivo C (un "subcontrolador").
+Abra un editor de texto y cree un archivo llamado <strong>mycontroller.c</strong>, este será un "subcontrolador" en la aplicación.
+El archivo mycontroller.c debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;
+#include &lt;icwpx.h&gt;
+
+void clientRedirect(){
+	char newURL[50];
+	sprintf(newURL, "%s/clientpage", APP_PATH);
+	
+	_status(302, "Found");
+	_header("Location", newURL);
+}
+
+void serverForward(){
+	char newURL[50];
+	sprintf(newURL, "%s/redirections.cwpx", APP_PATH);
+	
+	context = "/forwardpage"; // the only way of sending data internally is through context pointer (cwpx_args)
+	_forward(newURL);
+	_content("this won't be appended");
+}
+
+void serverInclude(){
+	char newURL[50];
+	sprintf(newURL, "%s/redirections.cwpx", APP_PATH);
+	
+	context = "/includepage";
+	_include(newURL);
+	_content("&lt;br&gt;&lt;br&gt;this will be appended");
+}
+
+void clientpage(){
+	_content("I'm the client page !");
+}
+
+void forwardpage(){
+	_content("I'm the forwarded page !");
+}
+
+void includepage(){
+	_content("I'm the included page !");
+}
+
+void welcomepage(){
+	char *a_tags = "&lt;a href=\"/redirections/client\"&gt;Client&lt;/a&gt;&lt;br&gt;"
+	"&lt;a href=\"/redirections/forward\"&gt;Forward&lt;/a&gt;&lt;br&gt;"
+	"&lt;a href=\"/redirections/include\"&gt;Include&lt;/a&gt;";
+	
+	_content(a_tags);
+}</code></pre>
+</div>
+
+<p>
+Las funciones "<strong>_forward</strong>" y "<strong>_include</strong>" reciben la ruta de un archivo.
+La ruta debe ser relativa al directorio raíz del servidor web.
+La ruta TIENE QUE abordar un archivo directamente, no una URL reescrita ni una carpeta con directiva de archivo de índice.
+Ambas son redirecciones internas, pero <em>_forward</em> deja la ejecución actual,
+mientras que <em>_include</em> continúa la ejecución actual después de que finaliza el archivo incluido.
+</p>
+
+<p>
+En la misma carpeta, cree un archivo llamado <strong>redirections.c</strong>, este será el controlador principal de la aplicación.
+El archivo redirections.c actual debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+#define APP_PATH "/redirections"
+#include "mycontroller.c"
+
+void _http(){
+	
+	// BE VERY CAREFUL ON REDIRECTING TO THE SAME RESOURCE (INFINITE LOOP)
+	if( _getvar("context", sizeof(void*)) != NULL ){
+      const char *context = _getvar("context", sizeof(char *));
+      if(strcmp(context, "/forwardpage")==0){
+        forwardpage();
+        return;
+      }
+      else if(strcmp(context, "/includepage")==0){
+        includepage();
+        return;
+      }
+    }
+
+	// continue with API "normal" flow
+	_maproute("/client", clientRedirect);
+	_maproute("/forward", serverForward);
+	_maproute("/include", serverInclude);
+	
+	_maproute("/clientpage", clientpage);
+	
+	_maproute("/*", welcomepage);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+El ejemplo específico que se muestra es arriesgado porque las redirecciones se realizan al mismo recurso.
+Las llamadas _maproute simples no se pueden usar en tales casos porque no se pueden usar URL amigables y no podemos editar la solicitud original.
+</p>
+
+<p>
+Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc redirections.c -I"directorio de cwpx.h" -o redirections.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Debido a que mycontroller.c está incluido en redirections.c, el comando anterior compila ambos.
+</p>
+
+<p>
+Edite el archivo <strong>.htaccess</strong> para redirigir todas las solicitudes a "/redirections" hacia el archivo redirections.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ redirections.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Inicie el navegador y vaya a "localhost/redirections" para probar el ejemplo.
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="redirectionscwpxapi.png" class="description_img" alt="Redirections" example><br>
+			<small><strong><i>"Redirections" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

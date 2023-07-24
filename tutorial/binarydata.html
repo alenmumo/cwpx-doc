@@ -1,0 +1,186 @@
+<div id="iframe-content">
+
+<p>
+Hasta el momento en los ejemplos se ha visto cómo desplegar contenido HTML utilizando la función '<strong>response.write</strong>'.
+Esta función trabaja de la misma manera que 'printf', pasando un formato de texto y una cantidad variable de argumentos.
+También se ha visto cómo el programdor puede cambiar el encabezado "<strong>Content-Type</strong>" de la respuesta
+usando la función '<strong>response.header</strong>'.
+Con una combinación del par de funciones mencionadas es posible desplegar contenido con diferentes tipos 'MIME'.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;  // sprintf
+#include &lt;string.h&gt;  // strlen
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	char *content = "{ \"name\":\"John\", \"age\":30, \"car\":null }";
+					
+	char content_length[4];
+	sprintf(content_length, "%d", strlen(content));
+	
+	response.header("Content-Type", "application/json");
+	response.header("Content-Length", content_length);
+	
+	response.write(content);	
+	return;
+}</code></pre>
+</div>
+
+<p>
+La funcipon 'response.write' funciona para desplegar texto, siendo ese texto tipos de dato 'string' (char *).
+Ejemplos de formato que se pueden manejar como texto son HTML, JSON, XML, entre otros.
+</p>
+
+<p>
+Algunas veces, en el desarrollo web no sólo se necesita enviar texto, sino que también se necesita enviar datos binarios,
+como por ejemplo imágenes, videos, documentos o cualquier otro tipo de archivo. 
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">long (*writeb)(char *bytes, unsigned long byteslen);</code></pre>
+</div>
+
+<p>
+La función 'write_bytes' recibe un '<strong>byte array</strong>' y una longitud.
+La longitud determina cuántos bytes del arreglo de bytes van a ser enviados en la respuesta.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">char *byte_array = "This is normal text";
+response.writeb(byte_array, 1);  // will output 'T'
+response.writeb(byte_array, 9);  // will output 'This is n'
+response.writeb(byte_array, 19);  // will output all the byte array</code></pre>
+</div>
+
+
+
+<em><h4>Desplegar una imagen</h4></em>
+
+<p>
+Este ejemplo muestra cómo desplegar una imagen. 
+Para efectos de la muestra, se utiliza una imagen local para cargar el arreglo de bytes.
+Lo único que hay que hacer es cambiar el encabezado 'Content-Type' (y 'Content-Length') y 
+utilizar la función 'writeb' para desplegar el contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;  // sprintf
+#include &lt;string.h&gt;  // strlen
+#include &lt;stdlib.h&gt;  // malloc, free
+#include &lt;sys/stat.h&gt; // stat
+#include &lt;cwpx.h>
+
+void do_http(Request request, Response response){
+
+	char *file_path = "path_to/my_image.png"; // absolute or relative to the script location
+	
+	// First, a few validations
+	struct stat file_information;
+	if(stat(file_path, &file_information) != 0){
+		// file not found, you could send a 404 not found
+		char *response_text = "File not found!";
+		response.writeb(response_text, strlen(response_text));
+		return;
+	}
+	
+	FILE *file = fopen(file_path, "rb");
+	if(file == NULL){
+		// file cannot be read, you could send a 500 internal error
+		char *response_text = "File could not be read!";
+		response.writeb(response_text, strlen(response_text));
+		return;
+	}
+	
+	char *file_bytes = malloc(1024 * 1024);
+	if(file_bytes == NULL){
+		// not enough space, you could send a 500 internal error
+		char *response_text = "File could not be read!";
+		response.writeb(response_text, strlen(response_text));
+		fclose(file);
+		return;
+	}
+	
+	// Now, the actual outputting
+	long file_length = file_information.st_size;
+	char content_length[10];
+	sprintf(content_length, "%i", file_length);
+	
+	response.header("Content-Type", "image/png");
+	response.header("Content-Length", content_length);
+	
+	int bytes_read = fread(file_bytes, 1, (1024 * 1024), file);
+	
+	while(bytes_read > 0){
+		response.writeb(file_bytes, bytes_read);
+		bytes_read = fread(file_bytes, 1, (1024 * 1024), file);
+	}
+	
+	fclose(file);
+	free(file_bytes);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc my_image.c -I"directorio de cwpx.h" -o my_image.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+En el navegador web, en la ruta "http://localhost/.../my_image.cwpx":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="imagecwpx.png" class="description_img" alt="Outputting binary from CWPX"><br>
+			<small><strong><i>Outputting binary from CWPX</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<hr>
+
+<p>
+Para un vídeo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">...
+char *file_path = "path_to/my_video.mp4";
+...
+cwpx_response.set_header("Content-Type", "video/mp4");
+...</code></pre>
+</div>
+
+<p>
+Para un documento PDF:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">...
+char *file_path = "path_to/my_document.pdf";
+...
+cwpx_response.set_header("Content-Type", "application/pdf");
+...</code></pre>
+</div>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

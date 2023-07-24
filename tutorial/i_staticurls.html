@@ -1,0 +1,158 @@
+
+<div id="iframe-content">
+
+
+<p>
+Al implementar la API iCWPX,
+hay un archivo principal o "controlador" a cargo de recibir todas las solicitudes entrantes a la aplicación y enviarlas a las funciones que procesan la solicitud.
+Como el archivo principal maneja todas las solicitudes, si alguien necesita servir archivos estáticos como páginas HTML o imágenes,
+el código para abrir el archivo estático, leerlo y enviarlo tendría que ser inventado e implementado manualmente por el usuario.
+El controlador intercepta todas las solicitudes y no conoce las URL estáticas que apuntan a archivos estáticos.
+</p>
+
+<p>
+En ejemplos anteriores aquí, las páginas web se crearon mediante la construcción de cadenas de texto,
+pero esos códigos son pequeños, no es una tarea tan difícil.
+Los usuarios pueden servir archivos estáticos colocándolos fuera del alcance del controlador principal de la aplicación,
+es decir, en cualquier lugar del directorio raíz del servidor web pero fuera del directorio de la aplicación actual.
+Sin embargo, la API iCWPX brinda a los usuarios la posibilidad de asignar direcciones URL a un directorio para archivos estáticos dentro del directorio de la aplicación.
+</p>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>staticurls</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>staticurls.c</strong>.
+El archivo debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void sayHello(){
+	_content("&lt;strong&gt;Hello!, I'm a mapped function page&lt;/strong&gt;" );
+}
+
+void _http(){
+	
+	_maproute("/hello", sayHello);
+	
+	_static("mystaticfiles");
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+La función "<strong>_static</strong>" recibe una ruta,
+en relación con el script de ejecución actual, que indica la carpeta donde se deben encontrar los archivos estáticos de la aplicación.
+Cree la carpeta <strong>mystaticfiles</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>example.html</strong>.
+El archivo debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;html&gt;
+&lt;head&gt;
+	&lt;title&gt;Static URLs example&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+	&lt;strong&gt;Hello!, I'm a real file page&lt;/strong&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+<p>
+Regrese al directorio de la aplicación y compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc staticurls.c -I"directorio de cwpx.h" -o staticurls.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Edite el archivo <strong>.htaccess</strong> para redirigir todas las solicitudes a "/staticurls" hacia el archivo staticurls.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ staticurls.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Inicie el navegador y vaya a "localhost/staticurls/example.html" (se omite el nombre de la carpeta estática).
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="staticurlscwpxapi.png" class="description_img" alt="Runtime Settings" example><br>
+			<small><strong><i>"Runtime Settings" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Si la carpeta estática es la carpeta raíz de la aplicación, los usuarios pueden llamar a la función <em>_static</em> sin argumentos ( "_static();" ),
+o envíe una cadena vacía ( "_static(<strong>""</strong>);").
+Si debe haber archivos de índice en la carpeta estática, los usuarios pueden enviar un segundo argumento que especifique los archivos de índice (separados por comas):
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">...
+
+void _http(){
+	
+	...
+	_static("mystaticfiles", "index.html,example.html");
+	...
+	return;
+}</code></pre>
+</div>
+
+<p>
+En caso de solicitar un directorio y los archivos de índice no existen,
+los usuarios pueden mostrar una lista de directorios enviando un tercer argumento con valor <strong>1</strong> (int):
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">...
+
+void _http(){
+	
+	...
+	_static("mystaticfiles", "", 1);
+	...
+	return;
+}</code></pre>
+</div>
+
+<p>
+El resultado es un archivo JSON con la lista de archivos y carpetas dentro del directorio solicitado.
+</p>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

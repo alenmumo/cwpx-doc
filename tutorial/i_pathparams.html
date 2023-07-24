@@ -1,0 +1,259 @@
+
+<div id="iframe-content">
+
+<p>
+A veces, al mapear direcciones URL, los usuarios necesitan separar los valores entre 'slashes' de las rutas de las direcciones URL.
+Por ejemplo, en una URL como "http://localhost/myapp/285/name",
+los valores "285" y "name" pueden ser la entrada clave para encontrar un recurso, siendo "285" el id del recurso y "name" el atributo solicitado del recurso.
+</p>
+
+<p>
+Para obtener parámetros de ruta de URL, utilice la anotación <strong>"@path"</strong>:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_("@path", &lt;param_type&gt;, &lt;param_name&gt;)</code></pre>
+</div>
+
+<p>
+Estas <em>anotaciones</em> deben ubicarse justo antes de llamar a _maproute.
+Después de declarar las anotaciones de ruta,
+edite el patrón de URL de _maproute ajustando los parámetros entre paréntesis y asignando el mismo nombre definido en las anotaciones "@path" (<strong>{param_name}</strong>).
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+...
+void _http(){
+
+	_("@path", int, p_int)
+	_maproute("/showint/{p_int}", showInt);
+	
+	_("@path", char, p_char)
+	_maproute("/showchar/{p_char}", showChar);
+	
+	_("@path", char *, p_string)
+	_maproute("/showstr/{p_string}", showString);
+	
+	_("@path", int, p_int)
+	_("@path", char, p_char)
+	_("@path", char *, p_string)
+	_maproute("/{p_int}/{p_char}/{p_string}", showAll);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para acceder a los valores de estos parámetros,
+los usuarios tienen que agregar parámetros a las funciones que se van a ejecutar,
+con igual nombre y mismo orden se declararon en las respectivas anotaciones:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">void showInt(int p_int);
+
+void showChar(char p_char);
+
+void showString(char *p_string);
+
+void showAll(int p_int, char p_char, char *p_string);</code></pre>
+</div>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>pathparams</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>pathparams.c</strong>, este será el controlador principal de la aplicación.
+Declare las cuatro funciones (showInt, showChar, showString, showAll) y el código de la función _http anterior.
+El archivo pathparams.c actual debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void showInt(int p_int){
+	_content("&lt;h3&gt;Path int: %d&lt;/h3&gt;", p_int);
+}
+
+void showChar(char p_char){
+	_content("&lt;h3&gt;Path char: %c&lt;/h3&gt;", p_char);
+}
+
+void showString(char *p_string){
+	_content("&lt;h3&gt;Path string: %s&lt;/h3&gt;", p_string);
+}
+
+void showAll(int p_int, char p_char, char *p_string){
+	_content("&lt;h3&gt;Path int: %d&lt;/h3&gt;", p_int);
+	_content("&lt;h3&gt;Path char: %c&lt;/h3&gt;", p_char);
+	_content("&lt;h3&gt;Path string: %s&lt;/h3&gt;", p_string);
+}
+
+void _http(){
+
+	_("@path", int, p_int)
+	_maproute("/showint/{p_int}", showInt);
+	
+	_("@path", char, p_char)
+	_maproute("/showchar/{p_char}", showChar);
+	
+	_("@path", char *, p_string)
+	_maproute("/showstr/{p_string}", showString);
+	
+	_("@path", int, p_int)
+	_("@path", char, p_char)
+	_("@path", char *, p_string)
+	_maproute("/{p_int}/{p_char}/{p_string}", showAll);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc pathparams.c -I"directorio de cwpx.h" -o pathparams.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Edite el <strong>.htaccess</strong> para redireccionar todas las solicitudes a "/pathparams" hacia el archivo pathparams.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ pathparams.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Inicie un navegador web y vaya a "localhost/pathparams":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="pathparamsshowallcwpxapi.png" class="description_img" alt="\"Path Params\" example"><br>
+			<small><strong><i>"Path Params" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Cambie las URLs a "localhost/pathparams/123/a/Pepe", "localhost/pathparams/showint/123", 
+"localhost/pathparams/showchar/a", "localhost/pathparams/showstr/Pepe":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="pathparamscwpxapi.png" class="description_img" alt="\"Path Params\" example"><br>
+			<small><strong><i>"Path Params" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Los patrones de URL pueden tener parámetros de ruta entre rutas estáticas,
+por ejemplo, "<strong>.../pathparams/showid/{id}/es</strong>".
+Agregue una anotación de ruta y una función _maproute para mostrar un texto en un idioma diferente:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+...
+
+void showIdSpanish(int id){
+	_content("&lt;h3&gt;Id en ruta: %d&lt;/h3&gt;", id);
+}
+
+void _http(){
+	...
+	
+	_("@path", int, id)
+	_maproute("/showid/{id}/es", showIdSpanish);
+	
+	...
+	return;
+}</code></pre>
+</div>
+
+<p>
+Vaya a "localhost/pathparams/showid/285/es":
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="pathparamsidcwpxapi.png" class="description_img" alt="\"Path Params\" example"><br>
+			<small><strong><i>"Path Params" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<hr>
+
+<em><h4>Asterisco en URL</h4></em>
+
+<p>
+Cuando los usuarios necesitan patrones de URL como "../urlmapping/{some_path_param_here}/<strong>whatever_the_rest_is</strong>",
+el "whatever_the_rest_is" se reemplaza en el patrón por un asterisco <strong>*</strong>.
+Los usuarios pueden obtener el valor de "whatever_the_rest_is" definiendo una <em>anotación</em> especial reservada "@path" llamada <strong>_ast_in_uri</strong>.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void printRestOfURL(int my_param, char *_ast_in_uri){
+	_content("&lt;h3&gt;my_param: %d, rest of URL: %s&lt;/h3&gt;", my_param, _ast_in_uri);
+}
+
+void _http(){
+	_("@path", int, my_param)
+	_("@path", char *, _ast_in_uri)
+	_maproute("/asterisc_example/{my_param}/*", printRestOfURL);
+	return;
+}</code></pre>
+</div>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="pathparamsasterisccwpxapi.png" class="description_img" alt="\"Path Params\" example"><br>
+			<small><strong><i>"Path Params" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>Recuerde volver a compilar para que los cambios surtan efecto.</p>
+
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

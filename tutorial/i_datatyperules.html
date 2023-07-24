@@ -1,0 +1,410 @@
+
+<div id="iframe-content">
+
+
+<p>
+La API iCWPX es una forma de facilitar el desarrollo web en C.
+Intenta utilizar una sintaxis muy minimalista y más sencilla posible, para no interferir demasiado en el código de la propia aplicación.
+Sin embargo, los usuarios deben seguir algunas <strong>reglas</strong> con respecto a los tipos de datos para que la API de CWPX funcione correctamente.
+</p>
+
+<em><h4>Tipos de datos en "<strong><em>annotations</em></strong>" y en función "<strong><em>_maproute</em></strong>"</h4></em>
+
+<p>
+Tipos de datos <strong>float</strong>, <strong>double</strong> y <strong>long double</strong> sólo puede ser utilizados con <strong>PUNTEROS</strong>.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void printFloat(float *number){
+	_content("&lt;strong&gt;Float: %.2f&lt;/strong&gt;", *number); // asterisc prefix
+}
+
+void printDouble(double *number){
+	_content("&lt;strong&gt;Double: %f&lt;/strong&gt;", *number); // asterisc prefix
+}
+
+void printLongDouble(long double *number){
+	_content("&lt;strong&gt;Long double: %Lf&lt;/strong&gt;", *number); // asterisc prefix
+}
+
+void _http(){
+	
+	_("@path", float *, number)
+	_maproute("/float/{number}", printFloat);
+	
+	_("@path", double *, number)
+	_maproute("/double/{number}", printDouble);
+	
+	_("@path", long double *, number)
+	_maproute("/longdouble/{number}", printLongDouble);
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Otro tipo de punteros numéricos, cambie la forma de acceder a ellos (sin anteponer el *):
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void printIntPointer(int *number){
+	_content("&lt;strong&gt;Int *: %d&lt;/strong&gt;", number);  // NO asterisc prefix
+}
+
+void cwpx_get_response(struct cwpx_request_struct request, struct cwpx_response_struct response, void *context){
+
+	_("@path", int *, number)
+	_maproute("/intpointer/{number}", printIntPointer);
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Char * (<strong>strings</strong>), son pasados transparentemente:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void printText(char *text){
+	_content("&lt;strong&gt;Char *: %s&lt;/strong&gt;", text);
+}
+
+void _http(){
+
+	_("@path", char *, text)
+	_maproute("/string/{text}", printText);
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Los tipos primitivos comunes (sin punteros y sin punto flotante) también se pasan sin problemas:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void printCharInt(char character, int number){
+	_content("&lt;strong&gt;Char: %c, Int: %d&lt;/strong&gt;", character, number);
+}
+
+void _http(){
+
+	_("@path", char, character)
+	_("@path", int, number)
+	_maproute("/charint/{character}/{number}", printCharInt);
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Por el momento, no se utiliza un arreglo (o matriz) en la API de CWPX para obtener parámetros de solicitud para enviarlos a las funciones.
+La <a href="index.html">Interfaz CWPX</a> tiene acceso a objetos de 'nombres repetidos' en parámetros POST si necesita algún tipo de esa funcionalidad.
+</p>
+
+
+<hr>
+
+<em><h4>Tipos de datos en la función "<strong><em>_context</em></strong>"</h4></em>
+
+<p>
+Pasar datos de controladores a páginas CWPX a través de <em>_context</em> es un poco "complicado",
+Los desarrolladores deben tener mucho cuidado con esto. El ejemplo que se muestra arriba, pero enviando datos a través del contexto,
+debería verse así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void printFloat(float *number){
+	float floatnumber = *number; // a "bridge" for sending it to context
+	_context("floatnumber", number, sizeof(float));
+	_view("view");
+}
+
+void printDouble(double *number){
+	double doublenumber = *number; // a "bridge" for sending it to context
+	_context("doublenumber", &doublenumber, sizeof(double));
+	_view("view");
+}
+
+void printLongDouble(long double *number){
+	long double longdouble = *number; // a "bridge" for sending it to context
+	_context("longdouble", &longdouble, sizeof(long double));
+	_view("view");
+}
+
+void printIntPointer(int *number){
+	int intnumber = number;
+	_context("intpointer", &intnumber, sizeof(int));
+	_view("view");
+}
+
+void printString(char *text){
+	_context("text", text, strlen(text));
+	_view("view");
+}
+
+void printCharInt(char character, int number){
+	_context("character", &character, sizeof(char));
+	_context("intnumber", &number, sizeof(int));
+	_view("view");
+}
+
+void _http(){
+	
+	_("@path", float *, number)
+	_maproute("/float/{number}", printFloat);
+	
+	_("@path", double *, number)
+	_maproute("/double/{number}", printDouble);
+	
+	_("@path", long double *, number)
+	_maproute("/longdouble/{number}", printLongDouble);
+	
+	_("@path", int *, number)
+	_maproute("/intpointer/{number}", printIntPointer);
+	
+	_("@path", char *, text)
+	_maproute("/string/{text}", printString);
+	
+	_("@path", char, character)
+	_("@path", int, number)
+	_maproute("/charint/{character}/{number}", printCharInt);
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para imprimir los valores de contexto en las páginas CWPX, considere el siguiente ejemplo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;%@ #include &lt;icwpx.h&gt; %&gt;
+
+&lt;html&gt;
+&lt;meta http-equiv="content-type" content="text/html; charset=utf-8"&gt;
+&lt;body&gt;
+
+&lt;h3&gt;Context datatypes in CWP Pages&lt;/h3&gt;
+
+&lt;% if( _context("floatnumber", sizeof(void *)) != NULL ) {
+	float *floatnumber = (float *)(_context("floatnumber"));
+	_content("Float: &lt;h5&gt;%.2f&lt;/h5&gt;", *floatnumber );
+	_content("&lt;h5&gt;%.2f (anonymous)&lt;/h5&gt;", *((float *)(_context("floatnumber"))) );
+}
+else if( _context("doublenumber", sizeof(void *)) != NULL ) {
+	double *doublenumber = (double *)(_context("doublenumber"));
+	_content("Double: &lt;h5&gt;%f&lt;/h5&gt;", *doublenumber );
+	_content("&lt;h5&gt;%f (anonymous)&lt;/h5&gt;", *((double *)(_context("doublenumber"))) );
+}
+else if( _context("longdouble", sizeof(void *)) != NULL ) {
+	long double *longdouble = (long double *)(_context("longdouble"));
+	_content("Long double: &lt;h5&gt;%Lf&lt;/h5&gt;", *longdouble );
+	_content("&lt;h5&gt;%Lf (anonymous)&lt;/h5&gt;", *((long double *)(_context("longdouble"))) );
+}
+else if( _context("intpointer", sizeof(void *)) != NULL ) {
+	int *number = (int *)(_context("intpointer"));
+	_content("Int *: &lt;h5&gt;%d&lt;/h5&gt;", number );
+	_content("Int *: &lt;h5&gt;%d&lt;/h5&gt;", *number );
+	_content("&lt;h5&gt;%d (anonymous)&lt;/h5&gt;", (int *)(_context("intpointer")) );
+}else if( _context("text", sizeof(void *)) != NULL ) {
+	char *text = (char *)(_context("text"));
+	_content("Char *: &lt;h5&gt;%s&lt;/h5&gt;", text );
+	_content("&lt;h5&gt;%s (anonymous)&lt;/h5&gt;", (char *)(_context("text")) );
+}else if( _context("character") != NULL && _context("intnumber") != NULL ) {
+	//char character = (char)(_context("character", sizeof(char)));
+	//int number = (int)(_context("intnumber", sizeof(int)));
+	int *numberP = _context("intnumber", sizeof(int)); 
+	int number = numberP != NULL ? *numberP : 0;
+	
+	char *characterP = _context("character", sizeof(char)); 
+	char character = characterP != NULL ? *characterP : 0;
+	
+	_content("Char: &lt;h5&gt;%c&lt;/h5&gt;Int: &lt;h5&gt;%d&lt;/h5&gt;", character, number );
+	_content("&lt;h5&gt;%c, %d (anonymous)&lt;/h5&gt;", (char)(_context("character")), (int)(_context("intnumber")) );
+}else {
+	_content("No context sent !");
+} %&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+<hr>
+
+<em><h4>Struct en "<strong><em>_context</em></strong>"</h4></em>
+
+<p>
+Pasar un <strong>struct</strong> de un controlador a una página CWPX a través de <em>_context</em> es una forma de emular patrones MVC:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+typedef struct model{
+	int id;
+	char name[20];
+}model;
+
+void printStruct(int id, char *name){
+	model m;
+	m.id = id;
+	if(name != NULL) strncpy(m.name, name, 19);
+	else strcpy(m.name, "(null)");
+	
+	_context("model", &m, sizeof(model));
+	_view("view");
+}
+
+void _http(){
+	
+	_("@path", int, id)
+	_("@path", char *, name)
+	_maproute("/model/{id}/{name}", printStruct);
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para imprimir los valores del modelo en una página CWPX, considere el siguiente ejemplo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;%@ #include &lt;icwpx.h&gt; %&gt;
+&lt;%@ typedef struct model{
+	int id;
+	char name[20];
+}model; %&gt;
+
+&lt;html&gt;
+&lt;meta http-equiv="content-type" content="text/html; charset=utf-8"&gt;
+&lt;body&gt;
+
+&lt;h3&gt;Context model in a CWP Page&lt;/h3&gt;
+
+&lt;% if( _context("model") != NULL ) {
+	model *m = (model *)(_context("model"));
+	_content("Id: &lt;h5&gt;%d&lt;/h5&gt;Name: &lt;h5&gt;%s&lt;/h5&gt;", m-&gt;id, m-&gt;name );
+}else {
+	_content("No context sent !");
+} %&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+<hr>
+
+<em><h4>Arreglos en "<strong><em>_context</em></strong>"</h4></em>
+
+<p>
+Se puede pasar un arreglo o matriz de un controlador a una página CWPX a través de <em>_context</em> usando punteros:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void printArray(){
+	int ROWS = 5, COLUMNS = 5;
+	int matrix[ROWS][COLUMNS];
+	
+	int i, j;
+	for(i = 0; i < ROWS; i++)
+		for(j = 0; j < COLUMNS; j++)
+			matrix[i][j] = 3;
+			
+	int (*matrixPtr)[ROWS][COLUMNS] = matrix;
+	_context("matrixPtr", matrixPtr, sizeof(int[5][5]));
+	
+	_view("view");
+}
+
+void _http(){
+
+	_maproute("/array", printArray);
+	_view("view");
+	
+	_content("Resource not found" );
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para imprimir los valores de matriz en una página CWPX, considere el siguiente ejemplo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;%@ #include &lt;icwpx.h&gt; %&gt;
+
+&lt;html&gt;
+&lt;meta http-equiv="content-type" content="text/html; charset=utf-8"&gt;
+&lt;body&gt;
+
+&lt;h3&gt;Context array in a CWP Page&lt;/h3&gt;
+
+&lt;% if( _context("matrixPtr") != NULL ) {
+	int ROWS = 5, COLUMNS = 5;
+	int (*matrixPtr)[ROWS][COLUMNS] = _context("matrixPtr");
+	int i, j;
+	for(i = 0; i < ROWS; i++){
+		for(j = 0; j < COLUMNS; j++){
+			_content("matrixPtr[%d][%d]: %d, ", i, j, (*matrixPtr)[i][j]);
+		}
+		_content("&lt;br&gt;");
+	}
+}else {
+	_content("No context sent !");
+} %&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

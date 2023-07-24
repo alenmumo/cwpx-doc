@@ -1,0 +1,178 @@
+<div id="iframe-content">
+
+<p>
+Una Cookie es un encabezado HTTP especial que el cliente web y el servidor utilizan como mecanismo para manejo
+de estados entre solicitudes, persistir datos entre conexiones, debido al concepto 'stateless' que por defecto aplica al protocolo HTTP.
+El cliente es quien debe manejar y almacenar la información de la cookie.
+El servidor inicia las cookies enviando encabezados en la solicitud del tipo 'Set-Cookie: name=value':
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">Set-Cookie: cwpx_cookie=this is my cookie</code></pre>
+</div>
+
+<p>
+Cuando una cookie solamente lleva la llave y el valor, es una cookie de sesión,
+es decir, la cookie durará sólo lo que dure la ventana del navegador abierta.
+Para que la cookie dure más tiempo que una sesión, se deben especificar más parámetros, como por ejemplo una fecha de expitación:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">Set-Cookie: cwpx_cookie=this is my cookie;  Expires=Wed, 21 Oct 2015 07:28:00 GMT;</code></pre>
+</div>
+
+<p>
+Después de que el servidor establece una cookie, el cliente en adelante incluirá la cookie en cada solicitud:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">Cookie: cwpx_cookie=this is my cookie; other_cookie=this is another cookie</code></pre>
+</div>
+
+<p>
+El cliente envía todas las cookies en un sólo encabezado de solicitud llamado 'Cookie',
+mientras que el servidor envía una línea de encabezado nueva con la llave 'Set-Cookie' por cada cookie en la respuesta.
+</p>
+
+<p>
+La intefaz provee dos funciones para cookies, una para obtener una cookie de la solicitud
+y una para poner cookies en la respuesta:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char* (*cookie)(const char *key);
+int (*cookie)(const char *name, const char *value, long expires, long max_age, const char *path, const char *domain, int secure, int httponly, const char *extra, ...);</code></pre>
+</div>
+
+<p>
+La función 'request.cookie' es trivial, encuanto a que recibe una llave y devuelve el valor de la cookie si fue encontrado, o NULL si no. 
+La función 'response.cookie' requiere más atención. Los parametros 'name' y 'value' son obligatorios, 
+mientras que el resto de parámetros (obligatorios también) pueden llevar un NULL o un 0 para que la función ignore esos parámetros.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">response.cookie("cwpx_cookie", "this is my cookie", 0, 0, NULL, NULL, 0, 0, NULL);</code></pre>
+</div>
+
+<p>
+Los parámetros 'expires' y 'max_age' le dan a las cookies un período de existencia. 
+Ambos parámtros son valores dados en segundos, representando cuánto tiempo estará almacenada la cookie en la máquina del cliente
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">response.cookie("cwpx_cookie", "this cookie will expire in at least one hour!", 3600, 0, NULL, NULL, 0, 0, NULL);  // using 'expires'
+
+response.cookie("cwpx_cookie", "this cookie will last at least one hour!", 0, 3600, NULL, NULL, 0, 0, NULL);  // using max_age</code></pre>
+</div>
+
+<p>
+Una combinación de parámetros puede ser utilizada para eliminar cookies.
+Por ejemplo, se puede intentar poner una nueva cookie, con una llave existente (la quese quiere eliminar),
+y poniend -1 ya sea en 'expires' o 'max_age':
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">response.cookie("cwpx_cookie", NULL, -1, -1, NULL, NULL, 0, 0, NULL);</code></pre>
+</div>
+
+<p>
+Los parámetros 'path' y 'domain' definen el ámbito de la cookie, su disponibilidad para determinadas URLs. 
+Los parámetros 'secure' y 'httponly' se toman como 'booleanos', 1 para true, 0 para false. 
+El parámetro 'extra' debe ser una cadena de texto que contenga atributos extra para concatenarlos a la cookie, 
+por ejemplo, el atributo 'SameSite'.
+<!--https://web.dev/samesite-cookies-explained/-->
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">response.cookie("cwpx_cookie", "cookie allowed only for /path!", 0, 0, "/path", NULL, 0, 1, "; SameSite=Strict");</code></pre>
+</div>
+
+
+<p>
+La función para enviar cookies en la respuesta debe ser llamada antes de cualquier llamada a 'response.write',
+porque las cookies son parte del encabezado.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdlib.h&gt;  // NULL
+#include &lt;string.h&gt;  // strcpy
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+
+	response.set_cookie("cookie_a", "this is a session cookie", 0, 0, NULL, NULL, 0, 0, NULL);
+	response.set_cookie("cookie_b", "this cookie will expire in at least 1 minute", 60, 0, NULL, NULL, 0, 0, NULL);
+	response.set_cookie("cookie_c", "this cookie will last at least 2 minutes", 0, 120, NULL, NULL, 0, 0, NULL);
+	response.set_cookie("cookie_d", "this session cookie will be available for /", 0, 0, "/", NULL, 0, 0, NULL);
+	response.set_cookie("cookie_e", "this cookie will never exist", -1, 0, NULL, NULL, 0, 0, NULL);
+	
+	const char *cookie_ptr = request.get_cookie("cookie_a");
+	
+	if(cookie_ptr == NULL){
+		response.write("Reload this page for showing the cookies!");
+	}
+	else{
+		char cookie_a[100];  // assuming a cookie max length of 100
+		cookie_ptr = request.get_cookie("cookie_a");
+		strcpy(cookie_a, (cookie_ptr != NULL ? cookie_ptr : "(null)"));
+		char cookie_b[100];
+		cookie_ptr = request.get_cookie("cookie_b");
+		strcpy(cookie_b, (cookie_ptr != NULL ? cookie_ptr : "(null)"));
+		char cookie_c[100];
+		cookie_ptr = request.get_cookie("cookie_c");
+		strcpy(cookie_c, (cookie_ptr != NULL ? cookie_ptr : "(null)"));
+		char cookie_d[100];
+		cookie_ptr = request.get_cookie("cookie_d");
+		strcpy(cookie_d, (cookie_ptr != NULL ? cookie_ptr : "(null)"));
+		char cookie_e[100];
+		cookie_ptr = request.get_cookie("cookie_e");
+		strcpy(cookie_e, (cookie_ptr != NULL ? cookie_ptr : "(null)"));
+		
+		response.write("cookie_a: %s&ltbr&gt", cookie_a);
+		response.write("cookie_b: %s&ltbr&gt", cookie_b);
+		response.write("cookie_c: %s&ltbr&gt", cookie_c);
+		response.write("cookie_d: %s&ltbr&gt", cookie_d);
+		response.write("cookie_e: %s&ltbr&gt", cookie_e);
+	}
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc request_cookies.c -I"directorio de cwpx.h" -o request_cookies.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Para probar el script, primero se debe lanzar el navegador (http://localhost/.../request_cookies.cwpx).
+Luego, para que las cookies tengan efecto, se debe recargar la página.
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="cookiescwpx.png" class="description_img" alt="CWPX Cookies"><br>
+			<small><strong><i>CWPX Cookies</i></strong></small>
+		</center>
+	</div>
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

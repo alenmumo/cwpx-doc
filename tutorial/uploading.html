@@ -1,0 +1,305 @@
+<div id="iframe-content">
+
+<p>
+En CWPX hay al menos dos formas de subir un archivo.
+Una es usando el encabezado "<strong>Content-Type: multipart/form-data...</strong>" y obtener el archivo como si se tratara de un parámetro 'POST'.
+El formato "application/x-www-form-urlencoded" no es utilizando para subir archivos. 
+La otra forma es usando 'raw body', enviando los bytes del archivo directamente en el cuerpo de la solicitud con algún 'Content-Type'.
+</p>
+
+<em><h4>Content-Type: multipart/form-data...</h4></em>
+
+<p>
+El programador dispone de una función específica para acceder a los archivos que vienen en la solicitud:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char *(*files)(const char *key, const char *attr);</code></pre>
+</div>
+
+<p>
+La función no devuelve un archivo como tal, sino más bien atributos del archivo que permiten al programador administrarlo,
+como por ejemplo el nombre original del archivo, el nombre temporal, el tipo 'MIME', entre otros:
+<ul class="globe_bullet">
+	<li>
+	<strong>"key"</strong>, <strong>"name"</strong> - devuelve la 'llave' del archivo
+	</li>
+	<li>
+	<strong>"filename"</strong> - devuelve el nombre original del archivo ('filename' en "multipart/form-data")
+	</li>
+	<li>
+	<strong>"temp_filename"</strong> - devuelve el nombre temporal de archivo, junto con su directorio  
+	</li>
+	<li>
+	<strong>"content_type"</strong> - devuelve el tipo 'MIME' del archivo
+	</li>
+	<li>
+	<strong>"content_length"</strong> - devuelve el tamaño en bytes del archivo
+	</li>
+</ul>
+<script>
+	bullets_("ul.globe_bullet");
+</script>
+</p>
+
+<p>
+Todos los atributos devuelven 'char *', por lo que si se devuelve un resultado NULL, significa que no se pudo mapear el archivo en la solicitud.
+Note que un atributo como 'content_length', el cual se infiere que es un dato numérico, también devuelve 'char *',
+por lo tanto se debe convertir a un tipo de dato numérico si se requiriera.
+El siguiente ejemplo muestra los campos de un archivo subido y lo mueve a una carpeta para guardarlo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	if(request.isset_post("p_file")){
+	
+		const char *key_name = request.files("p_file", "name");
+		const char *filename = request.files("p_file", "filename");
+		const char *temp_filename = request.files("p_file", "temp_filename");
+		const char *content_type = request.files("p_file", "content_type");
+		const char *content_length = request.files("p_file", "content_length");
+		
+		response.write("File name: %s&ltbr&gt", key_name);
+		response.write("File filename: %s&ltbr&gt", filename);
+		response.write("File temp_filename: %s&ltbr&gt", temp_filename);
+		response.write("File content_type: %s&ltbr&gt", content_type);
+		response.write("File content_length: %s bytes&ltbr&gt;", content_length);
+		
+		// use any function to move the file to the current script folder
+		if(rename(temp_filename, filename) == 0){
+			response.write("Your file has been successfully uploaded!");
+		}
+		else{
+			response.write("The was an error moving the file!");
+		}
+	}
+	else{
+		response.write("The file parameter was not found!");
+	}
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para poder subir un archivo usando HTML, cree un "input type='file'" con una etiqueta <strong>&ltform&gt</strong>:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;form action="/upload.cwpx" method="post" enctype="multipart/form-data"&gt;
+	p_file: &lt;input type="file" name="p_file"/&gt;
+	&lt;input type="submit" name="submit"/&gt;
+&lt;/form&gt;</code></pre>
+</div>
+
+<p>
+En Curl se puede usar el siguiente comando: (el '@' indica una ruta de archivo):
+</p>
+
+<div class='command'>
+<pre>
+$ curl -F "p_file=@my_file_path.txt" http://localhost/.../request_files.cwpx
+</pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc request_files.c -I"directorio de cwpx.h" -o request_files.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Con cualquiera de los clientes (HTML, Curl, etc.) lance una solicitud:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="uploadcwpx(multipart).png" class="description_img" alt="\"Multipart/form-data\" upload example"><br>
+			<small><strong><i>"Multipart/form-data" upload example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+<hr>
+
+<em><h4>'Raw Body'</h4></em>
+
+<p>
+Cuando el valor del encabezado "Content-Type" es cualquier otro diferente de "multipart/form-data" o "application/x-www-form-urlencoded", 
+entonces el cuerpo de la solicitud será tratado como 'raw body', o en este contexto de subida de archivos, como un 'raw file'. 
+</p>
+
+<p>
+Los métodos 'POST' y 'PUT' de HTTP pueden ser utilizados para enviar archivos, 
+con la advertencia de que el cuerpo de la solicitud debe ser definida por el programador. 
+En este tutorial ya se vio cómo acceder al contenido puro del cuerpo de una solicitud,
+lo único que habría que hacer es definir un mecanismo para poder tomar los bytes de la solicitud y guardarlos como un archivo físico.
+</p>
+
+<p>
+Cambiando un poco el código del ejemplo anterior:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;form action="/request_files.cwpx" id="file_form" method="post"&gt;&lt;!-- method="put" is invalid, default is method="get" --&gt;
+	p_file: &lt;input type="file" name="p_file"/&gt;
+	&lt;input type="submit" name="submit"/&gt;
+&lt;/form&gt;
+&lt;div id="put_result"&gt;&lt;/div&gt;</code></pre>
+</div>
+
+<p>
+El div 'put_result' se usa para mostrar el resultado devuelto por el script CWPX. 
+Se necesita además una función en JavaScript para hacer el llamado al script CWPX.
+El siguiente código intercepta el envío del formulario y modifica la solicitud para utilizar 'PUT'.
+Una forma comúnmente utilizada a la hora de enviar contenido por 'PUT' es enviar un 'id de recurso' (resource id),
+como por ejemplo, en una línea de solicitud tal como "<em>PUT request_files.cwpx<strong>/</strong>resource_id HTTP/1.1</em>; 
+sin embargo, ese tipo de URLs harán que el servidor web busque un recurso con el nombre 'request_files.cwpx/resource_id'
+y no un recurso con el nombre '<strong>request_files.cwpx</strong>'. 
+Más adelante en el tutorial, bajo la utilización de la CWPX API, 
+se verá cómo manejar este tipo de URLs, conocidas como 'url-rewriting', pero, por el momento, 
+simulemos el comportamiento usando un símbolo '?' en lugar de un '/', 
+para que la URL <em>request_files.cwpx<strong>?</strong>resource_id</em> pueda apuntar al script 'request_files.cwpx'.
+Los datos del archivo necesitan ser convertidos a un arreglo de bytes el cual es finalmente enviado como el cuerpo del 'PUT':
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;script&gt;
+window.onload=function() {
+	document.getElementById('file_form').onsubmit = function(){
+	send_put();
+	// prevent the default form behavior
+	return false;
+  }
+}
+
+function send_put(){
+	if (window.File && window.FileReader && window.FileList && window.Blob) {
+		// The File APIs are supported.
+	} else {
+		alert('The File APIs are not fully supported.');
+	}
+	document.getElementById('put_result').innerHTML = '';
+
+	var p_file = document.getElementById('file_form')['p_file'].files[0];
+	if (p_file){
+		var content_type = p_file.type;
+		var content = null;
+		var content_length = p_file.size;
+		var url = "upload.cwpx?" + p_file.name;
+		
+		var reader  = new FileReader();
+		reader.onload = function() {
+			var arrayBuffer = this.result,
+			array = new Uint8Array(arrayBuffer),
+			binaryString = array;
+			
+			content = binaryString;
+			
+			xhr = new XMLHttpRequest();
+			xhr.open("PUT", url, true);
+			xhr.setRequestHeader("Content-Type", content_type);
+			xhr.setRequestHeader("Content-Length", content_length);
+			xhr.onreadystatechange = function () { 
+				if (xhr.readyState == 4 && xhr.status == 200) {
+					document.getElementById('put_result').innerHTML = xhr.responseText;
+				}
+			}
+			xhr.send(content);
+		}
+		reader.readAsArrayBuffer(p_file); //byteArray
+	}
+}
+&lt;/script&gt;</code></pre>
+</div>
+
+<p>
+Si prefiere usar Curl, entonces la opción '--upload-file'realizará una solcicitud 'PUT':
+</p>
+
+<div class='command'>
+<pre>
+curl -H "Content-Type: image/png" --upload-file my_image.png "http://localhost/.../request_files.cwpx?my_image.png"
+</pre>
+</div>
+
+<p>
+El código fuente del script CWPX se vería así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;  // FILE
+#include &lt;stdlib.h&gt;  // NULL
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	const char *rawfile = request.raw(NULL);
+	
+	if(rawfile != NULL){
+		const char *resource_id = request.env("QUERY_STRING");
+		const char *content_type = request.header("Content-Type");
+		const char *content_length = request.header("Content-Length");
+		
+		if(content_type && content_length){
+			int file_length = atoi(content_length);
+		
+			response.write("Resource id: %s&lt;br&gt;", resource_id);
+			response.write("Content-Type: %s&lt;br&gt;", content_type);
+			response.write("Content-Length: %d&lt;br&gt;", file_length);
+			
+			FILE *uploadedFile = fopen(resource_id, "wb");
+			int bytes_written = 0;
+			while(bytes_written < file_length){
+				int new_bytes = fwrite(rawfile + bytes_written, 1, 1024, uploadedFile);
+				if(new_bytes <= 0) { break; }
+				bytes_written += new_bytes;
+			}
+			fclose(uploadedFile);
+			
+			response.write("Your file has been successfully uploaded!&lt;br&gt;");
+			
+		}else{
+			response.write("The 'Content-Type' and 'Content-Length' headers are required!&lt;br&gt;");
+		}
+	}
+	else{
+		response.write("The raw body was empty!&lt;br&gt;");
+	}
+	return;
+}</code></pre>
+</div>
+
+
+<p>
+En un navegador web se muestra lo siguiente:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="uploadcwpx(raw).png" class="description_img" alt="\"Raw\" upload example"><br>
+			<small><strong><i>"Raw" upload example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

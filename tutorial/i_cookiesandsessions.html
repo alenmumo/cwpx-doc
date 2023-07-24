@@ -1,0 +1,205 @@
+
+<div id="iframe-content">
+
+<p>
+Las cookies y las sesiones se utilizan para mantener un estado entre solicitudes HTTP,
+Las cookies se almacenan en la máquina cliente, mientras que las sesiones en la máquina servidor.
+</p>
+
+<hr>
+
+<em><h4>Cookies</h4></em>
+
+<p>
+Las cookies son encabezados especiales de solicitud/respuesta.
+La API de iCWPX proporciona la función "<strong>_cookie</strong>" para obtener y configurar cookies:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_cookie("&lt;request cookie name&gt;");</code></pre>
+</div>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_cookie("&lt;response cookie name&gt;", "&lt;cookie value&gt;", &lt;expires&gt;, &lt;max_age&gt;, "&lt;path&gt;", "&lt;domain&gt;", &lt;secure&gt;, &lt;httponly&gt;, "&lt;extra&gt;" );</code></pre>
+</div>
+
+<p>
+En CWPX, un valor de <strong>0</strong> (cero) para "expires", "max_age", "secure" y "httponly" los omite en el encabezado de la cookie.
+así como un valor de <strong>NULL</strong> para "ruta", "dominio" y "extra".
+Para eliminar cookies, envíe un número negativo en "expires" o "max_age",
+para configurar "seguro" o "httponly", envíe un valor de <strong>1</strong>.
+Para configurar "SameSite" o algo así, use "extra" y hágalo así: "; SameSite=Strict".
+</p>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>cookiesandsessions</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>cookiesandsessions.c</strong>, este será el controlador principal de la aplicación.
+El archivo actual cookiesandsessions.c debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void getCookie(char *mycookie){
+	_content("Cookie '%s'", mycookie);
+}
+
+void setCookie(char *value){
+	_cookie("mycookie", value, 0, 0, "/cookiesandsessions/", NULL, 0, 0, NULL);
+	_content("Cookie 'mycookie' was set, value '%s'", value);
+}
+
+void testpage(){
+	char *a_tags = "&lt;a href=\"/cookiesandsessions/getcookie\"&gt;Get Cookie&lt;/a&gt;&lt;br&gt;"
+	"&lt;a href=\"/cookiesandsessions/setcookie/edit_this_value\"&gt;Set Cookie&lt;/a&gt;";
+	
+	_content(a_tags);
+}
+
+void _http(){
+
+	_("@cookies", char *, mycookie)
+	_maproute("/getcookie", getCookie);
+	
+	_("@path", char *, value)
+	_maproute("/setcookie/{value}", setCookie);
+	
+	_maproute("/*", testpage);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Observe que se estableció un atributo de "ruta" para la cookie.
+Eso es porque si se omitiera, la función "setCookie" establecería la cookie exclusivamente para la ruta "/sessionsandcookies/setcookie",
+mientras que la función "getCookie" está en la ruta "/sessionsandcookies/getcookie".
+</p>
+
+<p>
+Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc cookiesandsessions.c -I"directorio de cwpx.h" -o cookiesandsessions.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Edite el archivo <strong>.htaccess</strong> para redirigir todas las solicitudes a "/cookiesandsessions" hacia el archivo cookiesandsessions.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ cookiesandsessions.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Inicie un navegador web y vaya a "localhost/cookiesandsessions".
+Primero, use el enlace para configurar el valor de la cookie, regrese y luego use el enlace para obtener el valor de la cookie...
+</p>
+
+
+<hr>
+
+<em><h4>Sessions</h4></em>
+
+<p>
+Las sesiones deben tratarse de forma especial para que funcionen correctamente.
+La API de CWPX proporciona la función "<strong>_session</strong>" para obtener y configurar sesiones:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">void *_session("&lt;session name&gt;", &lt;size of type/buffer&gt; ); // getter</code></pre>
+</div>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_session("&lt;session name&gt;", &lt;pointer to value&gt;, &lt;size of type or buffer&gt; ); // setter</code></pre>
+</div>
+
+<p>
+El archivo cookiesandsessions.c file, modificado para administrar sessions, debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void getSession(){
+	int *lengthPtr = (int*)_session("length", sizeof(int));
+	if(lengthPtr == NULL){ _content("Session not set!"); return; }
+	
+	char *text = (char*)_session("text", *lengthPtr);
+	if(text == NULL) { _content("Session not set!"); return; }
+	
+	_content("Session text '%s'(%d)", text, *lengthPtr);
+}
+
+void setSession(char *text){
+	int length = strlen(text);
+	_session("length", &length, sizeof(int));
+	_session("text", text, strlen(text));
+	_content("Sessions 'length' & 'text' set, values '%d' & '%s'", length, text);
+}
+
+void testpage(){
+	char *a_tags = "&lt;a href=\"/cookiesandsessions/getsession\"&gt;Get Session&lt;/a&gt;&lt;br&gt;"
+	"&lt;a href=\"/cookiesandsessions/setsession/edit_this_value\"&gt;Set Session&lt;/a&gt;";
+	
+	_content(a_tags);
+}
+
+void _http(){
+
+	_maproute("/getsession", getSession);
+	
+	_("@path", char *, text)
+	_maproute("/setsession/{text}", setSession);
+	
+	_maproute("/*", testpage);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Vuelva a compilar la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc cookiesandsessions.c -I"directorio de cwpx.h" -o cookiesandsessions.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Inicie un navegador web y vaya a "localhost/cookiesandsessions".
+Primero, use el enlace para configurar el valor de la sesión (y la duración), regrese y luego use el enlace para obtener el valor de la sesión...
+</p>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

@@ -1,0 +1,231 @@
+
+<div id="iframe-content">
+
+<p>
+A veces es más cómodo trabajar con CWPX Pages para mostrar los datos de la aplicación,
+debido a que está más centrado en la estructura HTML, los usuarios no tienen que escribirlo creando variables de cadena manualmente.
+En la API iCWPX, las <strong><em>Response Views</em></strong> son páginas CWPX a las que se llama desde una función asignada o "controlador".
+El controlador puede preparar un contexto con algunos valores y enviar ese contexto a la Vista de respuesta para mostrar los datos.
+</p>
+
+<p>
+Para llamar a una vista desde un controlador, use la función "<strong>_view</strong>".
+Esta función recibe la ruta de una página CWPX, relativa a la ubicación actual del controlador, sin extensión.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_view("&lt;relative path to page&gt;");</code></pre>
+</div>
+
+<p>
+Cree una carpeta en el directorio web del servidor (www) llamada <strong>responseviews</strong> y vaya a esa carpeta.
+Abra un editor de texto y cree un archivo llamado <strong>responseviews.c</strong>, este será el controlador principal de la aplicación.
+El archivo actual responseviews.c debe tener el siguiente contenido:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void _index(){
+	_view("views/index");
+}
+
+void about(){
+	_view("views/about");
+}
+
+void _http(){
+
+	_maproute("/about", about);
+	
+	_maproute("/*", _index);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+En algunos sistemas operativos antiguos basados en Unix, el nombre "index" es una variable reservada de una biblioteca estándar,
+para evitar tales problemas de tipos en conflicto, cambie el nombre a "_index".
+Compile la fuente:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc responseviews.c -I"directorio de cwpx.h" -o responseviews.cwpx -L"directorio de cwpx.dll(.so) y icwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+<p>
+Edite el archivo <strong>.htaccess</strong> para redirigir todas las solicitudes a "/responseviews" hacia el archivo responseviews.cwpx:
+</p>
+
+<div class='filevalue'>
+<pre>&lt;IfModule mod_rewrite.c&gt;
+ 
+	# Disable directory listings (mod_autoindex)
+	Options -Indexes
+
+	# Prevent mod_dir appending trailing slash to directories
+	DirectorySlash Off
+ 
+	Options +FollowSymLinks
+	
+	RewriteEngine On
+	RewriteRule ^(.*)$ responseviews.cwpx [QSA]
+
+&lt;/IfModule&gt;</pre>
+</div>
+
+<p>
+Ahora, en el mismo directorio de responseviews.c, cree una carpeta llamada "<strong>views</strong>".
+Dentro de esa carpeta, cree dos archivos: <strong>index.cwp</strong> y <strong>about.cwp</strong>:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;html&gt;
+&lt;head&gt;
+	&lt;meta http-equiv="content-type" content="text/html; charset=utf-8"&gt;
+	&lt;title&gt;Index&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+	&lt;h1&gt;Index&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+<br>
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;html&gt;
+&lt;head&gt;
+	&lt;meta http-equiv="content-type" content="text/html; charset=utf-8"&gt;
+	&lt;title&gt;About&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+	&lt;h1&gt;About&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+<p>
+Compile las páginas CWPX:
+</p>
+
+<div class='command'>
+<pre>
+$ cwpxcc index.cwp -I"directorio de cwpx.h" -o helloworld.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx -licwpx
+$ cwpxcc about.cwp -I"directorio de cwpx.h" -o helloworld.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx -licwpx
+</pre>
+</div>
+
+
+<p>
+Si va al navegador web y se dirige a "localhost/responseviews/about" o "localhost/responseviews/index",
+las páginas aparecerán, pero son solo páginas estáticas.
+Para enviar datos del controlador a la vista, use la función "<strong>_context</strong>".
+Esta función recibe un nombre, una valor y un tamaño:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">_context("&lt;name&gt;", &lt;variable&gt;, sizeof(variabletype));</code></pre>
+</div>
+
+<p>
+Edite las funciones, para que envíen una variable de contexto llamada "message":
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+#include &lt;icwpx.h&gt;
+
+void _index(){
+
+	char *data = "Welcome to CWPX API!";
+	_context("message", data, strlen(data));
+	
+	_view("views/index");
+}
+
+void about(){
+
+	char *data = "CWPX API is a URL dispatcher controller ...";
+	_context("message", data, strlen(data));
+	
+	_view("views/about");
+}
+
+void _http(){
+
+	_maproute("/about", about);
+	
+	_maproute("/*", _index);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Por supuesto, las llamadas _context deben aparecer encima de la llamada _view.
+Ahora, edite las páginas. Primero, incluya el archivo de encabezado icwpx.h.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;%@ #include &lt;icwpx.h&gt; %&gt;
+
+&lt;html&gt;
+&lt;head&gt;
+	&lt;meta http-equiv="content-type" content="text/html; charset=utf-8"&gt;
+	&lt;title&gt;Index&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+	&lt;h1&gt;Index&lt;/h1&gt;
+	&lt;% char *message = _context("message", sizeof(void*)) != NULL ? (char *)_context("message", sizeof(void*)) : ""; %&gt;
+	Message: &lt;% _content("&lt;h3&gt;%s&lt;/h3&gt;", message); %&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+<br>
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;%@ #include &lt;icwpx.h&gt; %&gt;
+
+&lt;html&gt;
+&lt;head&gt;
+	&lt;meta http-equiv="content-type" content="text/html; charset=utf-8"&gt;
+	&lt;title&gt;About&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+	&lt;h1&gt;About&lt;/h1&gt;
+	&lt;% char *message = _context("message", sizeof(void*)) != NULL ? (char *)_context("message", sizeof(void*)) : ""; %&gt;
+	Message: &lt;% _content("&lt;h3&gt;%s&lt;/h3&gt;", message); %&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+<p>
+No olvide volver a compilar el archivo responseviews.c y los archivos cwp de las vistas.
+Si vuelve al navegador web y va a "localhost/responseviews/about" o "localhost/responseviews/index",
+ahora debería ver cada vista con su respectivo mensaje.
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="responseviewscwpxapi.png" class="description_img" alt="\"Response Views\" example"><br>
+			<small><strong><i>"Response Views" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

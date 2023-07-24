@@ -1,0 +1,125 @@
+<div id="iframe-content">
+
+<p>
+CWPX es un mecanismo para desplegar contenido web desde scripts escritos en C.
+Al utilizar el mecanismo CGI para la intercomunicación con un servidor web,
+CWPX depende de la configuración que tenga el servidor web en donde se ejecuten los scripts.
+Una de las formas que se pueden utilizar para acceder a ciertas configuraciones del servidor web
+es a través de las variables de entorno que el servidor envía, como por ejemplo, 'SERVER_SOFTWARE',
+'SERVER_NAME', 'SERVER_PORT', entre otras.
+</p>
+
+<p>
+Además de la configuración dependiente del servidor web utilizado, 
+CWPX provee un mecanismo interno para manejar algunas configuraciones particulares de los scripts CWPX.
+Ejemplo de ello es el objeto 'config', del cual se muestra un ejemplo a continuación:
+</p>
+
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;  // sprintf
+#include &lt;string.h&gt;  // strlen
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+  
+  response.write("config.workdir: %s&lt;br&gt;", config.workdir());
+  response.write("config.rootdir: %s&lt;br&gt;", config.rootdir());
+  response.write("config.hostname: %s&lt;br&gt;", config.hostname());
+  response.write("config.servip: %s&lt;br&gt;", config.servip());
+  response.write("config.servpt: %d&lt;br&gt;", config.servpt());
+  response.write("config.currentdir: %s&lt;br&gt;", config.currentdir());
+  
+  response.write("config.tempdir: %s&lt;br&gt;", config.tempdir());
+  //response.write("config.set_tempdir: %d&lt;br&gt;", config.set_tempdir(""));
+  response.write("config.sessdir: %s&lt;br&gt;", config.sessdir());
+  //response.write("config.set_sessdir: %d&lt;br&gt;", config.set_sessdir(""));
+  response.write("config.sessid: %s&lt;br&gt;", config.sessid());
+  //response.write("config.set_sessid: %d&lt;br&gt;", config.set_sessid());
+  response.write("config.sessdur: %lu&lt;br&gt;", config.sessdur());
+  //response.write("config.set_sessdur: %d&lt;br&gt;", config.set_sessdur());
+  response.write("config.logfile: %s&lt;br&gt;", config.logfile());
+  //response.write("config.set_logfile: %d&lt;br&gt;", config.set_logfile());
+    
+  
+  response.write("config.buf_size: %lu&lt;br&gt;", config.buf_size());
+  //response.write("config.set_buf_size: %d&lt;br&gt;", config.set_buf_size());
+  response.write("config.maxqueueelems: %d&lt;br&gt;", config.maxqueueelems());
+  //response.write("config.set_maxqueueelems: %d&lt;br&gt;", config.set_maxqueueelems());
+  response.write("config.allow_post: %d&lt;br&gt;", config.allow_post());
+  //response.write("config.set_allow_post: %d&lt;br&gt;", config.set_allow_post());
+  response.write("config.max_post: %lu&lt;br&gt;", config.max_post());
+  //response.write("config.set_max_post: %d&lt;br&gt;", config.set_max_post());
+  
+  return;
+}</code></pre>
+</div>
+
+<p>
+Además, también existe la posibilidad de crear un archivo de configuración que sea compartido por varios scripts.
+Este archivo es un archivo .c, el cual será compilado de modo tal que se genere un .dll (o .so). 
+Luego este archivo se coloca en la misma ruta donde se ejecuta el servidor web o la ruta raíz.
+Cada vez que un script CWPX es ejecutado, este script buscará si hay una archivo llamado 'cwpxconf.dll' ('cwpxconf.so')
+para cargar la configuración ahí establecida.
+</p>
+
+<p>
+El archivo 'cwpx_conf.c' debe tener la siguiente estructura:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdio.h&gt;
+#include &lt;cwpx_config.h&gt;
+
+/* The following variables define some configuration settings that apply to 
+ * cwpx scripts. A 'char *' with empty value "", NULL or not declared (like 
+ * the ones comented in this sample) are 'auto-configurable' by default values.
+ * The same rule applies to number types with a 0 value or not declared. None 
+ * of the variables configure or affect the web server, they only affect the 
+ * current executing script. */
+
+/* The server's executable path. It's recommended to set this variable with the 
+ * the real webserver's directory, the path to 'bin'. If not set, the default 
+ * value is the current working directory ... */
+CWPXCFG char *cwpx_workdir = ""; 
+
+/* The server's root 'www' web directory. It is mandatory to set this variable 
+ * with the real webserver's web directory, the path to 'www', 'htdocs' ... */
+CWPXCFG char *cwpx_rootdir = "";
+
+/* Optional settings, just descriptive ... */
+/*CWPXCFG char *cwpx_hostname;*/
+/*CWPXCFG char *cwpx_servip = "";*/
+/*CWPXCFG unsigned int cwpx_servpt = 80908;*/
+/*CWPXCFG char *cwpx_tempdir = NULL;*/
+/*CWPXCFG char *cwpx_sessdir = ".";*/
+/*CWPXCFG char *cwpx_sessid = "";*/
+/*CWPXCFG unsigned long cwpx_sessdur;*/
+/*CWPXCFG char *cwpx_logfile = "logfile.txt";*/
+
+/* Some script handing settings */
+/*CWPXCFG unsigned long cwpx_buf_size;*/
+/*CWPXCFG unsigned int cwpx_max_queueelems;*/
+/*CWPXCFG unsigned short cwpx_allow_post;*/
+/*CWPXCFG unsigned long cwpx_max_post;*/
+</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc -Wall -Wextra -Wconversion -fPIC -c -I"directorio de cwpx_config.h" cwpx_config.c -o cwpx_config.o
+$ gcc  -Wall -Wextra -Wconversion -o cwpxconf.dll -shared cwpx_config.o
+</pre>
+</div>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

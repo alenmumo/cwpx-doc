@@ -1,0 +1,381 @@
+<div id="iframe-content">
+
+<p>
+Hay información que viene en el cuerpo de la solicitud HTTP.
+El cuerpo puede tener un formato definido, dependiendo del valor del encabezado "<strong>Content-Type</strong>".
+El contenido del cuerpo puede venir en forma "cruda" (raw bytes), 
+o puede venir estructurado en forma de parámetros.
+Para ser tratado como un cuerpo de parámetros, 
+CWPX necesita que el encabezado 'Content-Type' tenga el valor "<strong>application/x-www-form-urlencoded</strong>" o "<strong>multipart/form-data</strong>",
+de otro modo el cuerpo será tratado como 'raw bytes' y el programador deberá procesar ese cuerpo manualmente.
+</p>
+
+<p>
+CWPX usa la notación "POST" para referirse a la información que viene en el cuerpo de la solicitud: 
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char* (*post)(const char *key);</code></pre>
+</div>
+
+<p>
+el programador especifica una llave y la función le devuelve el valor si fue encontrado, 
+de otro modo le devolverá NULL.
+Por ejemplo, si el programador necesita saber el valor del parámetro 'p_param', 
+el código sería de la siguiente manera:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char *p_param = request.post("p_param");
+response.write("The POST parameter 'p_param' is: %s&ltbr&gt", p_param);</code></pre>
+</div>
+
+<p>
+Estos parámetros es muy probable que sean definidos en una etiqueta HTML <strong>&ltform&gt</strong>, 
+con el atributo 'method' establecido en "POST" y cada llave de parámetro establecida en el atributo 'name' de cada campo del formulario:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;form action="/request_post.cwpx" method="post" enctype="multipart/form-data"&gt;
+	p_param1: &lt;input type="text" name="p_param1"/&gt;
+	p_param2: &lt;input type="text" name="p_param2"/&gt;
+	&lt;input type="submit" name="submit"/&gt;
+&lt;/form&gt;</code></pre>
+</div>
+
+<p>
+En Curl, se puede simular el efecto de un form de la siguiente manera:
+</p>
+
+<div class='command'>
+<pre>
+$ curl -F "p_param1=a" -F "p_param2=b" http://localhost/.../request_post.cwpx
+</pre>
+</div>
+
+<p>
+El siguiente ejemplo muestra el uso de la función 'post':
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	
+	const char *p_param1 = request.post("p_param1");
+	const char *p_param2 = request.post("p_param2");
+	
+	response.write("The POST parameter 'p_param1' is: %s&lt;br&gt;", p_param1);
+	response.write("The POST parameter 'p_param2' is: %s&lt;br&gt;", p_param2);	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc request_post.c -I"directorio de cwpx.h" -o request_post.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Con algún cliente (HTML, Curl, etc.) lance una solicitud "POST" al script:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="postcwpx(simple).png" class="description_img" alt="Simple POST"><br>
+			<small><strong><i>Simple POST</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+<p>
+Al igual que para los parámetros 'GET', 
+para los 'POST' también existen funciones para obtener parámetros cuya llave se repita, por ejemplo, 
+'<strong>p_param</strong>=a&<strong>p_param</strong>=b&<strong>p_param</strong>=c' (en una solicitud "application/x-www-form-urlencoded"):
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char* (*post_at)(const char *key, int index);</code></pre>
+</div>
+
+<p>
+El programador especifica un índice a partir de 0, como si fuera un arreglo:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	
+	const char *p_param_0 = request.post_at("p_param", 0);
+	const char *p_param_1 = request.post_at("p_param", 1);
+	const char *p_param_2 = request.post_at("p_param", 2);
+	
+	response.write("The POST parameter 'p_param[0]' is: %s&lt;br&gt;", p_param_0);
+	response.write("The POST parameter 'p_param[1]' is: %s&lt;br&gt;", p_param_1);
+	response.write("The POST parameter 'p_param[2]' is: %s&lt;br&gt;", p_param_2);
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compile de nuevo y cambie el HTML para que se vea así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;form action="/request_post.cwpx" method="post" enctype="multipart/form-data"&gt;
+	p_param: &lt;input type="text" name="p_param"/&gt;&lt;br&gt;
+	p_param: &lt;input type="text" name="p_param"/&gt;&lt;br&gt;
+	p_param: &lt;input type="text" name="p_param"/&gt;&lt;br&gt;
+	&lt;input type="submit" name="submit"/&gt;
+&lt;/form&gt;</code></pre>
+</div>
+
+<p>
+O, en Curl:
+</p>
+
+<div class='command'>
+<pre>
+$ curl -F "p_param=a" -F "p_param=b" -F "p_param=c" http://localhost/.../post.cwpx
+</pre>
+</div>
+
+<p>
+The result would be:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="postcwpx(repeated).png" class="description_img" alt="POST with repeated parameters"><br>
+			<small><strong><i>POST with repeated parameters</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Contrario a 'GET', en 'POST' no se puede utilizar NULL para decir si un argumento existe o no en el cuerpo de la solicitud.
+No obstante, para tener uniformidad con 'GET', se provee una función 'isset' similar (sólo funciona para 'application/x-www-form-urlencoded').
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">int (*isset_post)(const char *key);
+int (*isset_post_at)(const char *key, int index);</code></pre>
+</div>
+
+<p>
+Por ejemplo:
+</p>
+
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltstdlib.h&gt // for using NULL
+#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	
+	const char *p_param1 = request.post("p_param1");
+	const char *p_param2 = request.post("p_param2");
+	response.write("The POST parameter 'p_param1' is: %s&ltbr&gt", p_param1);
+	response.write("The POST parameter 'p_param2' is: %s&ltbr&gt", p_param2);
+	
+	const char *p_array_0 = request.post_at("p_array", 0);
+	const char *p_array_1 = request.post_at("p_array", 1);
+	const char *p_array_2 = request.post_at("p_array", 2);
+	response.write("The POST parameter 'p_array[0]' is: %s&ltbr&gt", p_array_0);
+	response.write("The POST parameter 'p_array[1]' is: %s&ltbr&gt", p_array_1);
+	response.write("The POST parameter 'p_array[2]' is: %s&ltbr&gt", p_array_2);
+	
+	const char *p_array = request.post("p_array");
+	response.write("The POST parameter 'p_array' is: %s&ltbr&gt", p_array);
+	
+	const char *p_null = request.post("p_null");
+	response.write("The POST parameter 'p_null' is : %s&ltbr&gt", p_null);
+	
+	if(p_null == NULL){
+		response.write("The POST parameter 'p_null' is NULL ...");
+	}
+	
+	int isset_p_array_3 = request.isset_post_at("p_array", 3);
+	if(isset_p_array_3){
+		const char *p_array_3 = request.post_at("p_array", 3);
+		response.write("The POST parameter 'p_array[3]' is: %s&ltbr&gt", p_array_3);
+	}
+	else{
+		response.write("The POST parameter 'p_array[3]' was not set.");
+	}
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compile el código y cambie el HTML:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;form action="/request_post.cwpx" method="post" enctype="multipart/form-data"&gt;
+	p_param1: &lt;input type="text" name="p_param1"/&gt;&lt;br&gt;
+	p_param2: &lt;input type="text" name="p_param2"/&gt;&lt;br&gt;&lt;br&gt;
+	
+	p_array: &lt;input type="text" name="p_array"/&gt;&lt;br&gt;
+	p_array: &lt;input type="text" name="p_array"/&gt;&lt;br&gt;
+	p_array: &lt;input type="text" name="p_array"/&gt;&lt;br&gt;&lt;br&gt;
+	
+	p_null: &lt;input type="hidden" name="p_null"/&gt;&lt;br&gt;&lt;br&gt;
+	
+	&lt;input type="submit" name="submit"/&gt;
+&lt;/form&gt;</code></pre>
+</div>
+
+<p>
+En Curl:
+</p>
+
+<div class='command'>
+<pre>
+$ curl -F "p_param1=p1" -F "p_param2=p2" -F "p_array=a" -F "p_array=b" -F "p_array=c" http://localhost/.../post.cwpx
+</pre>
+</div>
+
+<p>
+El resultado sería parecido al siguiente:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="postcwpx(mixed).png" class="description_img" alt="POST example"><br>
+			<small><strong><i>POST example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<hr>
+
+<em><h4>'Raw' POST</h4></em>
+
+<p>
+Hay otros tipos de contenido comunes a la hora de enviar el cuerpo de una solicitud POST,
+como por ejemplo "<strong>application/xml</strong>", "<strong>application/json</strong>" o incluso "<strong>text/plain</strong>". 
+Estos contenidos no son definidos como pares "key=value" (aunque se pueden definir así),
+sino que son contenidos variables, sin esquema fijo, como sí lo son 'url-encoded' y 'multipart/form-data'.
+Es por eso que CWPX trata todos los tipos de contenido (a excepción de los dos mencionados) del cuerpo de una solicitud como '<strong>raw body</strong>'.
+Los programadores tienen acceso al cuerpo de la solicitud "a como viene", 
+por lo que deberá ser procesada manualmente.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char* (*raw)(const char* attr);</code></pre>
+</div>
+
+<p>
+La función que provee la interfaz para acceder al 'raw body' devuelve un puntero directo a los datos.
+Por ejemplo, para mostrar el contenido del cuerpo de la solicitud (asumiendo que no son datos binarios):
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;stdlib.h&gt; // for using NULL
+#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+	const char *raw_POST = request.raw(NULL);
+	
+	response.write("The raw POST content is:&lt;br&gt;");
+	response.write("%s&lt;br&gt;", raw_POST);
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para probar el script use un HTML como el siguiente:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">enctype: &lt;input id="post_enctype" type="text"/&gt; Examples: application/xml, application/json, text/plain&lt;br&gt;
+POST body:&lt;br&gt;&lt;textarea id="post_body"&gt;&lt;/textarea&gt;&lt;br&gt;
+&lt;input type="button" value="send POST" onclick="send_post();"/&gt;&lt;br&gt;
+&lt;div id="post_result"&gt;&lt;/div&gt;</code></pre>
+</div>
+
+<p>
+El botón llama una función Javascript que se encarga de hacer las llamadas al servidor:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">&lt;script&gt;
+function send_post(){
+	document.getElementById('post_result').innerHTML = '';
+	
+	var enctype = document.getElementById('post_enctype').value;
+	var body = document.getElementById('post_body').value;
+	var url = "post.cwpx";
+		
+	xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", enctype);
+	xhr.onreadystatechange = function () { 
+		if (xhr.readyState == 4 && xhr.status == 200) {
+			document.getElementById('post_result').innerHTML = xhr.responseText;
+		}
+	}
+	xhr.send(body);
+}
+&lt;/script&gt;</code></pre>
+</div>
+
+<p>
+El resultado dependerá del contenido que se envíe:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="postcwpx(raw).png" class="description_img" alt="Raw POST"><br>
+			<small><strong><i>Raw POST</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Si prefiere ejecutar un comando Curl:
+</p>
+
+<div class='command'>
+<pre>
+$ curl -X POST http://localhost/.../request_raw.cwpx -H "Content-Type: application/json" -d "[{\"id\": 1, \"name\": \"hello\", \"lastname\": \"world\"},{\"id\": 2, \"name\": \"hola\", \"lastname\": \"mundo\"}]"
+</pre>
+</div>
+
+<p>
+Teniendo acceso al 'raw body', el programador puede emplear sus propias técnicas para para procesar los datos.
+Hay bibliotecas buenas como <i>libxml</i> para 'parsear' XML o <i>jansson</i> para JSON.
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

@@ -1,0 +1,188 @@
+<div id="iframe-content">
+
+<p>
+Hay dos tipos de 'headers', los que se obtienen de la solicitud y los que se ponen en la respuesta.
+</p>
+
+<em><h4>Request headers</h4></em>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char* (*header)(const char *key);</code></pre>
+</div>
+
+<p>
+El programdor especifica una 'llave' o nombre del encabezado y la función devolverá el valor de dicho encabezado si fue encontrado,
+o de otro modo devolverá NULL. Por ejemplo, si el programador necesita saber el valor del campo 'User-Agent', 
+el código del script luciría así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">const char *user_agent = request.header("User-Agent");
+response.write("The request's User-Agent is: %s&ltbr&gt", user_agent);</code></pre>
+</div>
+
+<p>
+El nombre de la llave debe ser un nombre válido de encabezados HTTP. 
+El siguiente ejemplo muestra una forma de obtener algunos encabezados de la solicitud:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltstdlib.h&gt // for using NULL
+#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	
+	const char *header_keys[] = { "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language", "Authorization",
+				"Cache-Control", "Connection", "Content-Length", "Content-Type", "Cookie", 
+				"Date", "Expect", "Forwarded", "From", "Host", 
+				"If-Match", "If-Modified-Since", "If-None-Match", "If-Range", "If-Unmodified-Since", 
+				"Max-Forwards", "Origin", "Pragma", "Proxy-Authorization",
+				"Range", "Referer", "TE", "Transfer-Encoding",
+				"User-Agent", "Upgrade", "Via", "Warning"};
+
+	int key_elements = (int)( sizeof(header_keys) / sizeof(header_keys[0]) );
+	
+	int i;
+	response.write("Some of the request headers:&ltbr&gt");
+						
+	for(i = 0; i < key_elements; i++){
+		const char *header_value = request.header(header_keys[i]);
+		if(header_value != NULL){
+			response.write("%s: %s&ltbr&gt", header_keys[i], header_value);
+		}
+	}
+	
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc request_headers.c -I"directorio de cwpx.h" -o request_headers.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Después de colocar el CGI en el servidor web, se puede ver el resultado (varía dependiendo del navegador):
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="requestheaderscwpx.png" class="description_img" alt="\"Request Headers\" example"><br>
+			<small><strong><i>"Request Headers" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+
+<em><h4>Response headers</h4></em>
+
+<p>
+El programador está a cargo de crear los encabezados de la respuesta, si los hay.
+Los encabezados deben ser enviados antes que cualquier contenido sea enviado mediate la función 'response.write'.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">int (*header)(const char *key, const char *value);</code></pre>
+</div>
+
+<p>
+El programador especifica una llave y su valor, y la función devolverá 0 si no hubieron errores.
+Por ejemplo, si el programdor necesita enviar un encabezado con la longitud de la respuesta (conocida por el programador),
+debe establecer un encabezado 'Content-Length' en la respuesta:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">response.header("Content-Length", "1898");</code></pre>
+</div>
+
+<p>
+El nombre de la llave debe ser un nombre válido de encabezados HTTP, como en los encabezados de la solicitud.
+Note que la función sólo acepta texto en el parámetro 'value', por lo que si se tiene un número, 
+el programador debe pasarlo a texto primero.
+</p>
+
+<p>
+El siguiente ejemplo muestra una manera de establecer parámetros en la respuesta:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltstdio.h&gt // for sprintf
+#include &ltstring.h&gt // for strlen
+#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+
+	char *content = "&lthtml&gt"
+			"&ltbody&gt"
+			"The \"Content-Type\" and \"Content-Length\" response headers of this page were modified."
+			"&lt/body&gt"
+			"&lt/html&gt";
+					
+	char content_length[4];
+	sprintf(content_length, "%d", strlen(content));
+	
+	response.header("Content-Type", "text/plain");
+	response.header("Content-Length", content_length);
+	
+	response.write(content);
+	return;
+}</code></pre>
+</div>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc response_headers.c -I"directorio de cwpx.h" -o response_headers.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Los scripts CWPX por defecto tienen el encabezado "Content-Type: text/html", 
+que cambia si el programador especifica otro.
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="responseheaderscwpx.png" class="description_img" alt="\"ResponseHeaders\" example"><br>
+			<small><strong><i>"Response Headers" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<p>
+Vale mencionar que hay encabezados especiales correspondientes a la línea de respuesta (Response Line), 
+que es la primera línea que va en una respuesta HTTP, como por ejemplo, "HTTP/1.1 200 OK", siguiendo un patrón "Protocol StatusCode StatusMessage". 
+Para ese caso, se usará la clave "<strong>Status</strong>" y el valor como debería especificarse según el patrón:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">response.header("Status", "404 Not Found");</code></pre>
+</div>
+
+<p>
+Recuerde que los encabezados de la respuesta deben ser establacidos antes de la primera llamada a la función 'response.write'.
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>
+

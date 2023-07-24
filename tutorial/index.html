@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv='Content-type' content='text/html; charset=UTF-8'>
+	<meta name="description" content="C Web Programming X Website">
+	<meta name="keywords" content="c,compile,framework,http,web">
+	<meta name="author" content="Team CWPX">
+	<meta rel="author" href="https://cwebpx.com" content="">
+	<!--<meta http-equiv="Pragma" content="no-cache">-->
+	<meta name="HandheldFriendly" content="true" />
+	<!--<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" />-->
+	<meta name="viewport" content="width=device-width, initial-scale=1">	 
+	
+	<title>CWPX - Tutorial</title>
+	
+	<link rel="stylesheet" href="style.css" media="screen" />
+	<link rel="icon" href="favicon.ico" type="image/x-icon" />
+	<script src="jquery.min.js"></script>
+	<script src="script.js"></script>
+<script src="run_prettify.js"></script>
+<link rel="stylesheet" href="prettify.css" media="screen" />
+	
+</head>
+<body>
+<div id="container">
+
+	<div id="header">
+	
+		<div id="header_logo">
+		
+			<div id="logo_div">
+				<img id="logo_img" src="cwpx_logo.png"/>
+			</div><!--<div logo_div>-->
+			<div id="title_div">
+				<h3>CWPX - CGI</h3>
+			</div><!--<div title_div>-->
+			
+		</div><!--<div header_logo>-->
+		<div id="header_menu">
+		
+			<div id="menu_panning_container">
+				<div id="menu_panning_div">
+					
+						<!--<span id="menu_first" class="active">Tutorial</span>
+						<a id="menu_first" href="#tutorial_start" class="active">Tutorial</a>
+						<a id="menu_first" href="index.html" class="active">Tutorial</a>
+						<a href="/cwpx_api/index.html">CWPX API</a>-->
+						
+						<a id="menu_last"></a>
+						
+				</div><!--<div menu_panning_div>-->
+				
+				<div id="menu_overlay_div"></div>
+				
+			</div><!--<div menu_panning_container>-->
+			
+		</div><!--<div header_menu>-->
+	
+	</div><!--<div header>-->
+	
+	<div id="content">
+	
+	<a name="tutorial_start"></a>
+	
+	<div id="text_title">
+		<h4>Tutorial</h4>
+	</div><!--<div text_title>-->
+	
+	<div id="text_content">
+	
+		<p>
+		Este tutorial describe el funcionamiento básico del marco de desarrollo web CWPX. 
+		Los ejemplos fueron desarrollados utilizando compiladores GCC(MinGW) y CLANG. 
+		No se ha definido una implementación para otros compiladores.
+		</p>
+		
+		<div id="dl_container" class="dl_container">
+		<dl>
+		
+		<dt id="dt_installation">Scripts CWPX</dt>
+		<dd></dd>
+		
+		<dt id="dt_headers">Headers</dt>
+		<dd></dd>
+		
+		<dt id="dt_get">Parámetros URL (Query String, GET)</dt>
+		<dd></dd>
+		
+		<dt id="dt_post">Parámetros Body (POST)</dt>
+		<dd></dd>
+		
+		<dt id="dt_uploading">Subida de archivos</dt>
+		<dd></dd>
+		
+		<dt id="dt_cookies">Cookies</dt>
+		<dd></dd>
+		
+		<dt id="dt_sessions">Sesiones</dt>
+		<dd></dd>
+		
+		<dt id="dt_redirections">Redirecciones</dt>
+		<dd></dd>
+		
+		<!--<dt id="dt_impliciturls">Implicit URL's</dt>
+		<dd>How to write a redirect in cwpx.conf file</dd>-->
+		
+		<dt id="dt_binarydata">Datos binarios</dt>
+		<dd></dd>
+		
+		<dt id="dt_runtime">Configuración</dt>
+		<dd></dd>
+		</dl>
+		
+		</div><!--<div dl_container>-->
+		
+		<br>
+		<hr class='line_separator'>
+		<br>
+		<h4 style="color: #2f51b5;">Páginas CWPX</h4>
+		<p>
+		Una página CWPX es un archivo especial en el cual se puede escribir código HTML con código C incrustado,
+		haciendo que el contenido del HTML sea dinámico, con un estilo similar a los archivos PHP, ASP y JSP, 
+		utilizando etiquetas especiales para delimitar el códido dinámico y el código estático de la página.
+		</p>
+		
+		<div id="dl_cwp_container" class="dl_container">	
+		<dl>
+		
+		<dt id="dt_pages">CWPX Pages</dt>
+		<dd></dd>
+		
+		</dl>
+		
+		</div><!--<div dl_cwp_container>-->
+		
+		
+		<br>
+		<hr class='line_separator'>
+		<br>
+		<h4 style="color: #2f51b5;">iCWPX API</h4>
+		<p>
+		Este tutorial describe el funcionamiento básico de la API iCWPX,
+		la cual es una interface que trabaja como un 'superset 'del marco de desarrollo web CWPX. 
+		Dicha API permite la implementación de patrones MVC y servicios REST de una manera sencilla.
+		</p>
+		
+		<div id="dl_icwpx_container" class="dl_container">	
+		<dl>
+		
+		<dt id="dt_ihelloworld">Hola Mundo</dt>
+		<dd></dd>
+		
+		<dt id="dt_urlmapping">Mapeo URL</dt>
+		<dd></dd>
+		
+		<dt id="dt_pathparams">Parámetros en la ruta</dt>
+		<dd></dd>
+		
+		<dt id="dt_httpmethods">Métodos HTTP</dt>
+		<dd></dd>
+		
+		<dt id="dt_requestparams">Parámetros de la solicitud</dt>
+		<dd></dd>
+		
+		<dt id="dt_responsecontent">Contenido de la respuesta</dt>
+		<dd></dd>
+		
+		<dt id="dt_responseviews">Vistas de respuesta</dt>
+		<dd></dd>
+		
+		<dt id="dt_uploadfiles">Subida de archivos</dt>
+		<dd></dd>
+		
+		<dt id="dt_cookiesandsessions">Cookies & Sesiones</dt>
+		<dd></dd>
+		
+		<dt id="dt_iredirections">Redirecciones</dt>
+		<dd></dd>
+		
+		<dt id="dt_staticurls">Archivos estáticos</dt>
+		<dd></dd>
+		
+		<dt id="dt_datatyperules">Reglas de tipos</dt>
+		<dd></dd>
+		
+		</dl>
+		
+		</div><!--<div dl_icwpx_container>-->
+	
+	</div><!--<div text_content>-->
+		
+	</div><!--<div content>-->
+	
+	<div id="footer">
+		<div style="float: left; width: 1%;" title="C">
+			<div style="height: 5px;">&nbsp;</div>
+			<div style="background: blue; height: 3px;">&nbsp;</div>
+			<div style="background: white; height: 3px;">&nbsp;</div>
+			<div style="background: red; height: 5px;">&nbsp;</div>
+			<div style="background: white; height: 3px;">&nbsp;</div>
+			<div style="background: blue; height: 3px;">&nbsp;</div>
+		</div>
+		<small><strong>CWPX 2022</strong></small>
+		<div style="float: right; width: 1%;" title="R">
+			<div style="height: 5px;">&nbsp;</div>
+			<div style="background: blue; height: 3px;">&nbsp;</div>
+			<div style="background: white; height: 3px;">&nbsp;</div>
+			<div style="background: red; height: 5px;">&nbsp;</div>
+			<div style="background: white; height: 3px;">&nbsp;</div>
+			<div style="background: blue; height: 3px;">&nbsp;</div>
+		</div>
+	</div><!--<div footer>-->
+	
+</div><!--<div container>-->
+</body>
+</html>
+
+<script>
+	
+	//bullets_("ul.globe_bullet");
+	accordion_("#dl_container");
+	//expand_('.more', '.more_content', 'more_1.html', 'slideDown');
+	
+	// THE EXTERNAL HTMLS MUST NOT HAVE JUST ONE <p></p>
+	$("#dt_installation").mousedown(function(){
+		dl_dd_content_url = 'installation.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_configuration").mousedown(function(){
+		dl_dd_content_url = 'configuration.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_compilation").mousedown(function(){
+		dl_dd_content_url = 'compilation.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_pages").mousedown(function(){
+		dl_dd_content_url = 'cwpx_pages.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_helloworld").mousedown(function(){
+		dl_dd_content_url = 'helloworld.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_headers").mousedown(function(){
+		dl_dd_content_url = 'headers.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_get").mousedown(function(){
+		dl_dd_content_url = 'get.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_post").mousedown(function(){
+		dl_dd_content_url = 'post.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_uploading").mousedown(function(){
+		dl_dd_content_url = 'uploading.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_cookies").mousedown(function(){
+		dl_dd_content_url = 'cookies.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_sessions").mousedown(function(){
+		dl_dd_content_url = 'sessions.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_redirections").mousedown(function(){
+		dl_dd_content_url = 'redirections.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_binarydata").mousedown(function(){
+		dl_dd_content_url = 'binarydata.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_runtime").mousedown(function(){
+		dl_dd_content_url = 'runtime.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	accordion_("#dl_cwp_container");
+	
+	$("#dt_pages").mousedown(function(){
+		dl_dd_content_url = 'cwpx_pages.html';
+	});
+	
+	
+	accordion_("#dl_icwpx_container");
+	
+	$("#dt_ihelloworld").mousedown(function(){
+		dl_dd_content_url = 'i_helloworld.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_urlmapping").mousedown(function(){
+		dl_dd_content_url = 'i_urlmapping.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_pathparams").mousedown(function(){
+		dl_dd_content_url = 'i_pathparams.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_httpmethods").mousedown(function(){
+		dl_dd_content_url = 'i_httpmethods.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_requestparams").mousedown(function(){
+		dl_dd_content_url = 'i_requestparams.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_responsecontent").mousedown(function(){
+		dl_dd_content_url = 'i_responsecontent.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_responseviews").mousedown(function(){
+		dl_dd_content_url = 'i_responseviews.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_uploadfiles").mousedown(function(){
+		dl_dd_content_url = 'i_uploadfiles.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_cookiesandsessions").mousedown(function(){
+		dl_dd_content_url = 'i_cookiesandsessions.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_iredirections").mousedown(function(){
+		dl_dd_content_url = 'i_redirections.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_staticurls").mousedown(function(){
+		dl_dd_content_url = 'i_staticurls.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	$("#dt_datatyperules").mousedown(function(){
+		dl_dd_content_url = 'i_datatyperules.html';
+		loadIframe(this, dl_dd_content_url);
+	});
+	
+	function loadIframe(dt, dl_dd_content_url){
+		var $el = $(dt).next();
+		if(dl_dd_content_loaded.indexOf(dl_dd_content_url) == -1){
+			$(dt).next().append($('<iframe>').attr('src', dl_dd_content_url).attr('title', dl_dd_content_url).css('display', 'none')
+				.load(function() {
+					//$(this).height( $(this).contents().find("body").height() );
+					setTimeout(function(){
+			
+						$el.html(localStorage.getItem("lastcontent"));
+						localStorage.setItem("lastcontent", null);
+						
+						PR.prettyPrint();
+						
+					}, 1000);
+				}));
+				
+			
+			dl_dd_content_loaded = dl_dd_content_loaded + ';' + dl_dd_content_url;
+			dl_dd_content_url = null;
+		}
+	}
+	
+	$(window).bind('storage', function(e)
+	{
+	});
+	
+</script>

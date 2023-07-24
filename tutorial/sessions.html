@@ -1,0 +1,242 @@
+<div id="iframe-content">
+
+<p>
+Un objeto de sesión es un mecanismo especial que el servidor web implementa para almacenar datos de las solicitudes HTTP
+de modo que puedan ser accedidos entre diferentes solicitudes manteniendo un estado 'stateful'.
+Para el funcionamiento de las sesiones es imprescindible el funcionamiento de las cookies, 
+ya que para que el servidor identifique los objetos de sesión de un cliente en particular necesita que el identificador
+sea enviado en todas las solicitudes.
+</p>
+
+<p>
+Es muy importante que el programador conozca que debe ser cuidadoso con el código referente a los objetos de sesión,
+ya que se trabaja con tamaños específicos y un mal uso provocaría que los scripts fallen.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">session.start();</code></pre>
+</div>
+
+<p>
+La función 'session.start' debe ser llamada en los scripts que van a inicializar una sesión.
+Esta función se encarga de establecer el encabezado 'Set-Cookie' con un identificador de sesión.
+La función debe ser llamada antes de cualquier llamada a 'response.write'.
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;cwpx.h&gt;
+
+void do_http(Request request, Response response){
+
+	session.start();
+	response.write("session_name: %s&lt;br&gt;", conf.session_name);
+	response.write("session id: %s&lt;br&gt;", session.session_id);
+	return;
+}</code></pre>
+</div>
+
+<p>
+La interfaz CWPX provee las siguientes acciones para los objetos de sesión:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">int (*start)();
+void* (*get)(const char *key, long size_of);
+int (*set)(const char *key, void *value, long size_of);
+/*
+// pendientes de implementar 
+int (*set_expires)(const char *key, long seconds);
+int (*unset)(const char *key);
+int (*destroy)();
+int (*change_session_id)(int destroy);
+int (*change_session_cookie)(long expires, long max_age, const char *path, const char *domain, int secure, int httponly, const char *extra);
+const char *session_id;*/</code></pre>
+</div>
+
+<p>
+El atributo 'session_id' devolverá NULL si la sesión no ha sido iniciada.
+La función 'set_expires' establece un tiempo en segundos de duración del objeto. 
+La función 'unset' quita el valor de una sesión y la 'anula' y 'destroy' destruirá todos los objetos de sesión.
+</p>
+
+<p>
+La función 'change_session_id' refresca el identificador de sesión actual y destruye todos los objetos almacenados si el parámetro 'destroy' es 1. 
+La función 'change_session_cookie' edita la información de la cookie actual usada para las sesiones.
+</p>
+
+<p>
+Preste especial atención al tipo <strong>void *</strong>. 
+En CWPX ese tipo es utilizado para representar objetos. Un 'void *' significa que el objeto puede se de cualquier tipo: int, char, double, etc.
+Esos objetos necesitan ser 'casteados' desde void* hacia el tipo de dato que se desea y también al revés, es decir, 'castear' el tipo que se desea a void*.
+El parámetro 'size_of' tiene ese nombre intencionalmente para que el programador recuerde utilizar la función '<strong>sizeof(type)</strong>', 
+o en el caso de 'char *' una longitud manualmente establecida.
+</p>
+
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;string.h&gt;  // strlen, strcpy
+#include &lt;cwpx.h&gt;
+
+typedef struct object{
+	int integer;
+	char string[20];
+}object;
+
+void do_http(Request request, Response response){
+
+	session.start();
+	
+	response.write("session name: %s&lt;br&gt;", conf.session_name);
+	response.write("session id: %s&lt;br&gt;", session.session_id);
+	
+	char new_string_session[50] = "this is a simple string";
+	set_session("my_string_session", new_string_session, strlen(new_string_session));	// a pointer (as char*) doesn't need the '&'
+	
+	int new_int_session = 123;
+	set_session("my_int_session", &new_int_session, sizeof(int));	// a primitive type (as int) NEEDS the '&'
+	
+	double new_double_session = 666.777;
+	set_session("my_double_session", &new_double_session, sizeof(double));
+	
+	object new_object_session;
+	new_object_session.integer = -1;
+	strcpy(new_object_session.string, "hello world!");
+	set_session("my_object_session", &new_object_session, sizeof(object));	// a non-pointer needs the '&'
+
+	return;
+}</code></pre>
+</div>
+
+<p>
+En el código anterior el primer elemento a pooner atención es 'struct object'.
+Las sesiones CWPX solamente trabajan con 'structs' cuyos todos sus elementos tengan un tamaño definido, 
+es decir, sin punteros.
+Si el programador usa 'char *' en 'object.string' o 'int *' en 'object.integer', 
+entonces la función 'session.set' fallará y el script también.
+</p>
+
+<p>
+La función 'session.set' recibe un 'void *'.
+Para 'castear' cualquier otro tipo a 'void*', se necesita usar un símbolo '<strong>&</strong>' frente a la variable.
+En el ejemplo, 'new_int_session', 'new_double_session' y 'new_object_session' no son punteros, sino primitivos,
+por lo tanto se antepone el '&'.
+</p>
+
+<p>
+Un string como 'new_string_session', que es un 'char *', no necesita ser casteado a 'void *', por lo que no se necesita el '&'. 
+El programamador debe conocer bien los tamaños de los strings que almacena y recupera de las sesiones para no tener fallos en los scripts.
+En el ejemplo, se usa 'strlen' porque eso asegura el tamaño correcto de la cadena, esa cadena no sobrepasaría una logitud de 50 caracteres.
+Sería más específico utilizar '<em>session.set("my_string_session", new_string_session, 23)</em> (el valor 'quemado').
+</p>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc set_sessions.c -I"directorio de cwpx.h" -o set_sessions.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+En un navegador web vaya a 'http://localhost/.../set_sessions.cwpx'. El script mostrará solamente el nombre de sesión y el id.
+Ahora, en la siguiente parte se muestra cómo obtener los objetos de sesión establecidos en el script anterior:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &lt;string.h&gt;  // strlen, strcpy
+#include &lt;cwpx.h&gt;
+
+typedef struct object{
+	int integer;
+	char string[20];
+}object;
+
+void do_http(Request request, Response response){
+
+	char my_string_session[50] = "";
+	char *string_session_ptr = get_session("my_string_session", 50);	// Be sure that the length is enough, or it'll fail
+	strcpy(my_string_session, (string_session_ptr != NULL ? string_session_ptr : "(null)"));
+	
+	int my_int_session = 0;
+	int *int_session_ptr = get_session("my_int_session", sizeof(int));
+	my_int_session = int_session_ptr != NULL ? *int_session_ptr : my_int_session;	// needs to be dereferenced by this way
+	
+	double my_double_session = 0;
+	double *double_session_ptr = get_session("my_double_session", sizeof(double));
+	my_double_session = double_session_ptr != NULL ? *double_session_ptr : my_double_session;
+	
+	object my_object_session = {0, ""};
+	object *object_session_ptr = get_session("my_object_session", sizeof(object));
+	my_object_session = object_session_ptr != NULL ? *object_session_ptr : my_object_session;
+	
+	response.write("string_session: %s&lt;br&gt;", my_string_session);
+	response.write("int_session: %d&lt;br&gt;", my_int_session);
+	response.write("double_session: %f&lt;br&gt;", my_double_session);
+	response.write("object_session.integer: %d&lt;br&gt;", my_object_session.integer);
+	response.write("object_session.string: %s&lt;br&gt;", my_object_session.string);
+
+	return;
+}</code></pre>
+</div>
+
+<p>
+La función 'session.get' devuelve un 'void *' el cual se recomienda 'castear' primero a un puntero del tipo requerido y después 'dereferenciarlo'.
+Para eso, se antepone un '<strong>*</strong>' en frente del puntero de tipo.
+Los punteros 'int_session_ptr', 'double_session_ptr' y 'object_session_ptr' son punteros de tipo, 
+por lo que se debe anteponer el '*' para acceder al valor.
+Un string (char *) como 'my_string_session' no necesita ser 'casteado', así que no se necesita el '*'.
+</p>
+
+<p>
+Compilar:
+</p>
+
+<div class='command'>
+<pre>
+$ gcc get_sessions.c -I"directorio de cwpx.h" -o get_sessions.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+En el navegador web vaya a 'http://localhost/.../get_sessions.cwpx para mostrar los valores de las sesiones:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="sessionscwpx.png" class="description_img" alt="CWPX Sessions"><br>
+			<small><strong><i>CWPX Sessions</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<em><h4>Nota importante sobre las sesiones en CWPX</h4></em>
+
+<p>
+Por algunas razones (de seguridad), las sesiones CWPX no establecen el atributo 'path' de la cookie de sesión, 
+a diferencia de PHP, por ejemplo, que establece un '/' para este atributo.
+El manejo de las cookies está a cargo del cliente web, 
+algunos navegadores web tienden a enviar cookies sin atributo 'path' sólo en el 'path' para el que fueron establecidas.
+Por esta razón, es importante considerar el uso de la función 'change_session_cookie' para mdificar el 'path' 
+a conveniencia del programador.
+</p>
+
+<p>
+El nombre de la cookie de sesión puede ser cambiado en la configuración inicial de CWPX, 
+pero esto afecta a todos los scripts que leen la misma configuración.
+Una opción para cambiar el nombre de la cookie sólo para un script específico es cambiar el nombre de la cookie en tiempo de ejecución,
+usando la función 'change_session_name' como se verá adelante en la sección de configuración.
+</p>
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>

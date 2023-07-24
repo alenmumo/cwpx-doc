@@ -1,0 +1,140 @@
+<div id="iframe-content">
+
+<p>
+Un <strong>script CWPX</strong> es el resultado de compilar un archivo .c el cual implementa la interfaz CWPX (<strong><i>cwpx.h</i></strong>).
+El código fuente del script es un programa que implementa una función especial para que dicho programa tenga acceso 
+a una solicitud HTTP y extraiga información de esta, así como a su vez proporcionar una respuesta para la solicitud.
+La intención de CWPX es facilitar la extracción de datos de la solicitud y facilitar la preparación de la respuesta de la solicitud,
+mediante el manejo de técnicas y sintaxis comunes encontradas en otros marcos de desarrollo web de otros lenguajes de programación, 
+como por ejemplo, PHP, JSP, ASP.NET y Django.
+</p>
+
+<p>
+En un editor de código se edita el programa CWPX, incluyendo la interfaz:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltcwpx.h&gt</code></pre>
+</div>
+
+<p>
+Luego se crea una función 'void' llamada <strong>do_http</strong>, la cual recibe 2 parámetros, 
+un objeto <strong>Request</strong> y un objeto <strong>Response</strong>, 
+que como sus nombres lo sugieren, sirven para manejar ambas partes de una solicitud HTTP:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">void do_http(Request request, Response response){
+}</code></pre>
+</div>
+
+<p>
+Finalmente, dentro del ámbito de la función, se pueden utilizar los métodos que proveen los objetos Request y Response,
+por ejemplo, para devolver un texto se usaría <strong>response.write</strong>. 
+En esta muestra, el código del script CWPX está diseñado para devolver un contenido HTML con el saludo 'Hola Mundo':
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltcwpx.h&gt
+
+void do_http(Request request, struct Response response){
+	response.write("&lthtml&gt\n");
+	response.write("&ltbody&gt\n");
+	response.write("&lth1&gtHello World!&lt/h1&gt\n");
+	response.write("&lt/body&gt\n");
+	response.write("&lt/html&gt\n");
+	return;
+}</code></pre>
+</div>
+
+<p>
+Para compilar el script utilice un comando como el que se muestra a continuación. 
+Recuerde que se debe configurar el Sistema Operativo, 
+ya sea para que el usuario le indique al sistema el lugar donde se encuentra la biblioteca CWPX,
+o bien, para que el usuario sepa dónde debe colocar la biblioteca.
+</p>
+
+<div class='command'>
+<pre>
+$ gcc helloworld.c -I"directorio de cwpx.h" -o helloworld.cwpx -L"directorio de cwpx.dll(.so)" -lcwpx
+</pre>
+</div>
+
+<p>
+Si la compilación fue exitosa, el archivo 'helloworld.cwpx', es el CGI ejecutable. 
+Este archivo debe ser colocado en la carpeta 'web' del servidor web, 
+dependiendo de su configuración. 
+Algunas veces los archivos CGI tienen una carpeta especial 'cgi-bin' destinada para ese propósito,
+otras veces el servidor permite que se coloque los archivos en cualquier parte del directorio web ('www', 'htdocs', 'public_html', etc.).
+Al lanzar un navegador web hacia la ruta del script, se puede observar el saludo desde el script:
+</p>
+
+<p>
+	<div class="description_img_container">
+		<center>
+			<img src="helloworldcwpx.png" class="description_img" alt="\"Hello World\" example"><br>
+			<small><strong><i>"Hello World" example</i></strong></small>
+		</center>
+	</div>
+</p>
+
+<hr>
+
+<em><h4>El contenido dinámico</h4></em>
+
+<p>
+Sin contenido dinámico, un programa que muestre 100 veces el 'Hola Mundo', con el número de vez concatenado, probablemente se escriba así:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	response.write("&lthtml&gt\n");
+	response.write("&ltbody&gt\n");
+	response.write("1. Hello World!\n");
+	response.write("2. Hello World!\n");
+	response.write("3. Hello World!\n");
+	response.write("4. Hello World!\n");
+	response.write("5. Hello World!\n");
+	... // 94 líneas más como estas ...
+	response.write("100. Hello World!\n");
+	response.write("&lt/body&gt\n");
+	response.write("&lt/html&gt\n");
+	return;
+}</code></pre>
+</div>
+
+<p>
+Aplicando contenido dinámico, se puede reducir de la siguiente manera:
+</p>
+
+<div class='code'>
+<!--&lt;, &gt;, &amp;-->
+<pre><code class="prettyprint">#include &ltcwpx.h&gt
+
+void do_http(Request request, Response response){
+	response.write("&lthtml&gt\n");
+	response.write("&ltbody&gt\n");
+	
+	int i;
+	for(i = 1; i <= 100; i++){
+		response.write("%d. Hello World!\n", i);
+	}
+	
+	response.write("&lt/body&gt\n");
+	response.write("&lt/html&gt\n");
+	return;
+}</code></pre>
+</div>
+
+
+</div>
+
+<script>
+	localStorage.setItem("lastcontent", document.getElementById('iframe-content').innerHTML);
+</script>
