@@ -1,0 +1,17 @@
+digraph "Cwpx_Context"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="Cwpx_Context",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Cwpx_Context object for handling a HTTP request."];
+  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" config" ,fontname="Helvetica"];
+  Node2 [label="Config",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structConfig.html",tooltip="Config object for getting and setting context data."];
+  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" cwpx_args" ,fontname="Helvetica"];
+  Node3 [label="Cwpx_Args",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCwpx__Args.html",tooltip="Cwpx_Args object for getting and setting context data."];
+  Node4 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" response" ,fontname="Helvetica"];
+  Node4 [label="Response",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structResponse.html",tooltip="Response object for writing response data."];
+  Node5 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" session" ,fontname="Helvetica"];
+  Node5 [label="Session",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structSession.html",tooltip="Session object for getting and setting session data."];
+  Node6 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" request" ,fontname="Helvetica"];
+  Node6 [label="Request",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structRequest.html",tooltip="Request object for reading request data."];
+}

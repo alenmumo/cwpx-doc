@@ -1,0 +1,27 @@
+var structConfig =
+[
+    [ "allow_post", "structConfig.html#aab0a56c9156b8f655913abc87d5f22d3", null ],
+    [ "buf_size", "structConfig.html#a16e1a2ff5bde3b88910ad14da0fefe11", null ],
+    [ "currentdir", "structConfig.html#adb44e475a240d5657c38bba679cc46ae", null ],
+    [ "hostname", "structConfig.html#a4e5514a2fc73c4a5753cadfa42158549", null ],
+    [ "logfile", "structConfig.html#acd197394bddb4665173195fe2d20b391", null ],
+    [ "max_post", "structConfig.html#ad1e554544f4ae282434515adf301344b", null ],
+    [ "maxqueueelems", "structConfig.html#aceb44d28112f5f595d8d8703e455adb9", null ],
+    [ "rootdir", "structConfig.html#a2adc812f090ebe60e665837eee1864ef", null ],
+    [ "servip", "structConfig.html#ac87b465d5b7609220eb81c50a50420bf", null ],
+    [ "servpt", "structConfig.html#a9475856cb34b878f0952ced55275b2dd", null ],
+    [ "sessdir", "structConfig.html#a9b015ad0bb326772416ddfc1080832bd", null ],
+    [ "sessdur", "structConfig.html#a417dba408ddbba507a27cd1dbc2e199e", null ],
+    [ "sessid", "structConfig.html#a40fe9a760570fea18a1e78570ca0cbe9", null ],
+    [ "set_allow_post", "structConfig.html#a79f3b4fd90bbf85400c727ac9e69f470", null ],
+    [ "set_buf_size", "structConfig.html#a0511952fb6937bd2944280291d21877f", null ],
+    [ "set_logfile", "structConfig.html#a2a756fdfaeef4fd55658cc26015b5f4e", null ],
+    [ "set_max_post", "structConfig.html#a381969eb95f6e792decd1b256204b65e", null ],
+    [ "set_maxqueueelems", "structConfig.html#a7383dd1203c37ec2a51631154cfc5ec5", null ],
+    [ "set_sessdir", "structConfig.html#acfe655fddf420bc23df07695e5436923", null ],
+    [ "set_sessdur", "structConfig.html#abd947e847db4b82bf0efa333ab27c05f", null ],
+    [ "set_sessid", "structConfig.html#a4c442ae094539da6130b8c4473993cdc", null ],
+    [ "set_tempdir", "structConfig.html#ab082ac96a779bdf47c7aaeae403c59fd", null ],
+    [ "tempdir", "structConfig.html#a2272665083e92f169c6877825be54130", null ],
+    [ "workdir", "structConfig.html#a5a888a41321352225a00a14b7b0c62c4", null ]
+];
